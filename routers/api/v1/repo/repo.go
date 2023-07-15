@@ -226,6 +226,118 @@ func Search(ctx *context.APIContext) {
 	})
 }
 
+// Search repositories via options
+func GetAddons(ctx *context.APIContext) {
+	// swagger:operation GET /repos/search repository repoSearch
+	// ---
+	// summary: Search for repositories
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: q
+	//   in: query
+	//   description: keyword
+	//   type: string
+	// - name: type
+	//   in: query
+	//   description: Limit search to add-ons of specific type
+	//   type: boolean
+	// - name: sort
+	//   in: query
+	//   description: sort repos by attribute. Supported values are
+	//                "alpha", "created", "updated", "size", and "id".
+	//                Default is "alpha"
+	//   type: string
+	// - name: order
+	//   in: query
+	//   description: sort order, either "asc" (ascending) or "desc" (descending).
+	//                Default is "asc", ignored if "sort" is not specified.
+	//   type: string
+	// - name: page
+	//   in: query
+	//   description: page number of results to return (1-based)
+	//   type: integer
+	// - name: limit
+	//   in: query
+	//   description: page size of results
+	//   type: integer
+	// responses:
+	//   "200":
+	//     "$ref": "string"
+	//   "422":
+	//     "$ref": "#/responses/validationError"
+
+	opts := &repo_model.SearchRepoOptions{
+		ListOptions:        utils.GetListOptions(ctx),
+		Actor:              ctx.Doer,
+		Keyword:            ctx.FormTrim("q"),
+		OwnerID:            -1,
+		PriorityOwnerID:    -1,
+		TeamID:             -1,
+		TopicOnly:          ctx.FormBool("type"),
+		Collaborate:        util.OptionalBoolNone,
+		Private:            false,
+		Template:           util.OptionalBoolNone,
+		StarredByID:        -1,
+		IncludeDescription: false,
+	}
+
+	sortMode := ctx.FormString("sort")
+	if len(sortMode) > 0 {
+		sortOrder := ctx.FormString("order")
+		if len(sortOrder) == 0 {
+			sortOrder = "asc"
+		}
+		if searchModeMap, ok := context.SearchOrderByMap[sortOrder]; ok {
+			if orderBy, ok := searchModeMap[sortMode]; ok {
+				opts.OrderBy = orderBy
+			} else {
+				ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid sort mode: \"%s\"", sortMode))
+				return
+			}
+		} else {
+			ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid sort order: \"%s\"", sortOrder))
+			return
+		}
+	}
+
+	var err error
+	repos, count, err := repo_model.SearchAddonRepository(ctx, opts)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: err.Error(),
+		})
+		return
+	}
+
+	results := make([]string, len(repos))
+	for i, repo := range repos {
+		if err = repo.LoadOwner(ctx); err != nil {
+			ctx.JSON(http.StatusInternalServerError, api.SearchError{
+				OK:    false,
+				Error: err.Error(),
+			})
+			return
+		}
+		accessMode, err := access_model.AccessLevel(ctx, ctx.Doer, repo)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, api.SearchError{
+				OK:    false,
+				Error: err.Error(),
+			})
+		}
+		resultEntry, err := convert.ToSexpAddonRepo(ctx, repo, accessMode)
+		if err != nil {
+			log.Warn("Loading an add-on repository in API failed: %v", err.Error())
+		}
+		results[i] = resultEntry
+	}
+	ctx.SetLinkHeader(int(count), opts.PageSize)
+	ctx.SetTotalCountHeader(count)
+	ctx.PlainText(http.StatusOK, convert.ToSexpAddonIndex(results))
+}
+
 // CreateUserRepo create a repository for a user
 func CreateUserRepo(ctx *context.APIContext, owner *user_model.User, opt api.CreateRepoOption) {
 	if opt.AutoInit && opt.Readme == "" {

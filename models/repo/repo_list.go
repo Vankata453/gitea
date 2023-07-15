@@ -522,6 +522,13 @@ func SearchRepository(ctx context.Context, opts *SearchRepoOptions) (RepositoryL
 	return SearchRepositoryByCondition(ctx, opts, cond, true)
 }
 
+// SearchAddonRepository returns repositories based on search options and add-on filters,
+// it returns results in given range and number of total results.
+func SearchAddonRepository(ctx context.Context, opts *SearchRepoOptions) (RepositoryList, int64, error) {
+	cond := AddonRepositoryCondition(SearchRepositoryCondition(opts))
+	return SearchRepositoryByCondition(ctx, opts, cond, true)
+}
+
 // SearchRepositoryByCondition search repositories by condition
 func SearchRepositoryByCondition(ctx context.Context, opts *SearchRepoOptions, cond builder.Cond, loadAttributes bool) (RepositoryList, int64, error) {
 	sess, count, err := searchRepositoryByCondition(ctx, opts, cond)

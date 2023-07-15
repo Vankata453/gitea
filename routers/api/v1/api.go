@@ -851,6 +851,7 @@ func Routes(ctx gocontext.Context) *web.Route {
 
 		m.Group("/repos", func() {
 			m.Get("/search", repo.Search)
+			m.Get("/addons", repo.GetAddons)
 
 			m.Get("/issues/search", repo.SearchIssues)
 

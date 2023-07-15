@@ -9,6 +9,12 @@ type SearchResults struct {
 	Data []*Repository `json:"data"`
 }
 
+// AddonSearchResults results of a successful add-on search
+type AddonSearchResults struct {
+	OK   bool               `json:"ok"`
+	Data []*AddonRepository `json:"data"`
+}
+
 // SearchError error of a failed search
 type SearchError struct {
 	OK    bool   `json:"ok"`
