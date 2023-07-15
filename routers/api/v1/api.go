@@ -1086,6 +1086,7 @@ func Routes() *web.Router {
 		// Repos (requires repo scope)
 		m.Group("/repos", func() {
 			m.Get("/search", repo.Search)
+			m.Get("/addons", repo.SearchAddons)
 
 			// (repo scope)
 			m.Post("/migrate", reqToken(), bind(api.MigrateRepoOptions{}), repo.Migrate)

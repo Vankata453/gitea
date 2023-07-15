@@ -1,6 +1,239 @@
 {{template "admin/layout_head" (dict "ctxData" . "pageClass" "admin")}}
 	<div class="admin-setting-content">
 		<h4 class="ui top attached header">
+			{{ctx.Locale.Tr "Add-on repository requests"}}
+		</h4>
+		<div class="ui attached table segment">
+			<table class="ui very basic striped table unstackable">
+				<thead>
+					<tr>
+						<th data-sortt-asc="oldest" data-sortt-desc="newest">ID{{SortArrow "oldest" "newest" $.SortType false}}</th>
+						<th>{{ctx.Locale.Tr "admin.repos.owner"}}</th>
+						<th data-sortt-asc="alphabetically" data-sortt-desc="reversealphabetically">
+							{{ctx.Locale.Tr "admin.repos.name"}}
+							{{SortArrow "alphabetically" "reversealphabetically" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "repo.watchers"}}</th>
+						<th  data-sortt-asc="moststars" data-sortt-desc="feweststars">
+							{{ctx.Locale.Tr "repo.stars"}}
+							{{SortArrow "moststars" "feweststars" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="mostforks" data-sortt-desc="fewestforks">
+							{{ctx.Locale.Tr "repo.forks"}}
+							{{SortArrow "mostforks" "fewestforks" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "admin.repos.issues"}}</th>
+						<th  data-sortt-asc="gitsize" data-sortt-desc="reversegitsize">
+							{{ctx.Locale.Tr "admin.repos.size"}}
+							{{SortArrow "gitsize" "reversegitsize" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="lfssize" data-sortt-desc="reverselfssize">
+							{{ctx.Locale.Tr "admin.repos.lfs_size"}}
+							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "admin.auths.updated"}}</th>
+						<th>{{ctx.Locale.Tr "admin.users.created"}}</th>
+						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{range .Repos}}
+						{{if not (or .IsTemplate (not .IsPrivate) (not .LatestRelease) .IsFork .IsMirror (eq .Owner.Name "supertux"))}}
+							<tr>
+								<td>{{.ID}}</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Owner.HomeLink}}">{{.Owner.Name}}</a>
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="text gold">{{svg "octicon-lock"}}</span>
+									{{end}}
+								</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Link}}">{{.Name}}</a>
+									{{if .IsArchived}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.archived"}}</span>
+									{{end}}
+									<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.private"}}</span>
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.internal"}}</span>
+									{{end}}
+									{{if eq .ObjectFormatName "sha256"}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.sha256"}}</span>
+									{{end}}
+								</td>
+								<td>{{.NumWatches}}</td>
+								<td>{{.NumStars}}</td>
+								<td>{{.NumForks}}</td>
+								<td>{{.NumIssues}}</td>
+								<td>{{FileSize .GitSize}}</td>
+								<td>{{FileSize .LFSSize}}</td>
+								<td>{{DateTime "short" .UpdatedUnix}}</td>
+								<td>{{DateTime "short" .CreatedUnix}}</td>
+								<td>
+									<button class="ui green button" onclick="window.location.href='{{.Link}}/settings';">{{ctx.Locale.Tr "Configure"}}</button>
+									<a class="delete-button" href="" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a>
+								</td>
+							</tr>
+						{{end}}
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+		<br />
+
+		<h4 class="ui top attached header">
+			{{ctx.Locale.Tr "Add-on update requests"}}
+		</h4>
+		<div class="ui attached table segment">
+			<table class="ui very basic striped table unstackable">
+				<thead>
+					<tr>
+						<th data-sortt-asc="oldest" data-sortt-desc="newest">ID{{SortArrow "oldest" "newest" $.SortType false}}</th>
+						<th>{{ctx.Locale.Tr "admin.repos.owner"}}</th>
+						<th data-sortt-asc="alphabetically" data-sortt-desc="reversealphabetically">
+							{{ctx.Locale.Tr "admin.repos.name"}}
+							{{SortArrow "alphabetically" "reversealphabetically" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "repo.watchers"}}</th>
+						<th  data-sortt-asc="moststars" data-sortt-desc="feweststars">
+							{{ctx.Locale.Tr "repo.stars"}}
+							{{SortArrow "moststars" "feweststars" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="mostforks" data-sortt-desc="fewestforks">
+							{{ctx.Locale.Tr "repo.forks"}}
+							{{SortArrow "mostforks" "fewestforks" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "admin.repos.issues"}}</th>
+						<th  data-sortt-asc="gitsize" data-sortt-desc="reversegitsize">
+							{{ctx.Locale.Tr "admin.repos.size"}}
+							{{SortArrow "gitsize" "reversegitsize" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="lfssize" data-sortt-desc="reverselfssize">
+							{{ctx.Locale.Tr "admin.repos.lfs_size"}}
+							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "Release Created"}}</th>
+						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{range .Repos}}
+						{{if not (or .IsPrivate (not .LatestRelease) (not .AddonRepository) (eq .LatestRelease.Sha1 (index .AddonRepository.Versions 0)))}}
+							<tr>
+								<td>{{.ID}}</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Owner.HomeLink}}">{{.Owner.Name}}</a>
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="text gold">{{svg "octicon-lock"}}</span>
+									{{end}}
+								</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Link}}">{{.Name}}</a>
+									{{if .IsArchived}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.archived"}}</span>
+									{{end}}
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.internal"}}</span>
+									{{end}}
+									{{if eq .ObjectFormatName "sha256"}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.sha256"}}</span>
+									{{end}}
+								</td>
+								<td>{{.NumWatches}}</td>
+								<td>{{.NumStars}}</td>
+								<td>{{.NumForks}}</td>
+								<td>{{.NumIssues}}</td>
+								<td>{{FileSize .GitSize}}</td>
+								<td>{{FileSize .LFSSize}}</td>
+								<td><span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span></td>
+								<td>
+									<a class="ui green button" href="" data-url="{{$.Link}}/release/verify?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}">{{ctx.Locale.Tr "Verify"}}</a>
+									<a class="ui red button" href="" data-url="{{$.Link}}/release/reject?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-reason="sample reason">{{ctx.Locale.Tr "Reject"}}</a>
+								</td>
+							</tr>
+						{{end}}
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+		<br />
+
+		<h4 class="ui top attached header">
+			{{ctx.Locale.Tr "Add-on repository management"}}
+		</h4>
+		<div class="ui attached table segment">
+			<table class="ui very basic striped table unstackable">
+				<thead>
+					<tr>
+						<th data-sortt-asc="oldest" data-sortt-desc="newest">ID{{SortArrow "oldest" "newest" $.SortType false}}</th>
+						<th>{{ctx.Locale.Tr "admin.repos.owner"}}</th>
+						<th data-sortt-asc="alphabetically" data-sortt-desc="reversealphabetically">
+							{{ctx.Locale.Tr "admin.repos.name"}}
+							{{SortArrow "alphabetically" "reversealphabetically" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "repo.watchers"}}</th>
+						<th  data-sortt-asc="moststars" data-sortt-desc="feweststars">
+							{{ctx.Locale.Tr "repo.stars"}}
+							{{SortArrow "moststars" "feweststars" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="mostforks" data-sortt-desc="fewestforks">
+							{{ctx.Locale.Tr "repo.forks"}}
+							{{SortArrow "mostforks" "fewestforks" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "admin.repos.issues"}}</th>
+						<th  data-sortt-asc="gitsize" data-sortt-desc="reversegitsize">
+							{{ctx.Locale.Tr "admin.repos.size"}}
+							{{SortArrow "gitsize" "reversegitsize" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="lfssize" data-sortt-desc="reverselfssize">
+							{{ctx.Locale.Tr "admin.repos.lfs_size"}}
+							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
+						</th>
+						<th>{{ctx.Locale.Tr "admin.auths.updated"}}</th>
+						<th>{{ctx.Locale.Tr "admin.users.created"}}</th>
+						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{range .Repos}}
+						{{if not (or .IsTemplate .IsPrivate .IsFork .IsMirror (eq .Owner.Name "supertux"))}}
+							<tr>
+								<td>{{.ID}}</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Owner.HomeLink}}">{{.Owner.Name}}</a>
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="text gold">{{svg "octicon-lock"}}</span>
+									{{end}}
+								</td>
+								<td>
+									<a class="tw-break-anywhere" href="{{.Link}}">{{.Name}}</a>
+									{{if .IsArchived}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.archived"}}</span>
+									{{end}}
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.internal"}}</span>
+									{{end}}
+									{{if eq .ObjectFormatName "sha256"}}
+										<span class="ui basic label">{{ctx.Locale.Tr "repo.desc.sha256"}}</span>
+									{{end}}
+								</td>
+								<td>{{.NumWatches}}</td>
+								<td>{{.NumStars}}</td>
+								<td>{{.NumForks}}</td>
+								<td>{{.NumIssues}}</td>
+								<td>{{FileSize .GitSize}}</td>
+								<td>{{FileSize .LFSSize}}</td>
+								<td>{{DateTime "short" .UpdatedUnix}}</td>
+								<td>{{DateTime "short" .CreatedUnix}}</td>
+								<td><a class="delete-button" href="" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a></td>
+							</tr>
+						{{end}}
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+		<br />
+
+		<h4 class="ui top attached header">
 			{{ctx.Locale.Tr "admin.repos.repo_manage_panel"}} ({{ctx.Locale.Tr "admin.total" .Total}})
 			<div class="ui right">
 				<a class="ui primary tiny button" href="{{AppSubUrl}}/admin/repos/unadopted">{{ctx.Locale.Tr "admin.repos.unadopted"}}</a>

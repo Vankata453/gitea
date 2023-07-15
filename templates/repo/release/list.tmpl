@@ -27,6 +27,11 @@
 								{{else if (not $release.IsTag)}}
 									<span class="ui green label">{{ctx.Locale.Tr "repo.release.stable"}}</span>
 								{{end}}
+								{{if $release.IsVerified}}
+									<span class="ui purple label">{{ctx.Locale.Tr "Verified"}}</span>
+								{{else if $release.IsRejected}}
+									<span class="ui red label">{{ctx.Locale.Tr "Rejected"}}</span>
+								{{end}}
 							</h4>
 							<div>
 								{{if and $.CanCreateRelease (not $.PageIsSingleTag)}}

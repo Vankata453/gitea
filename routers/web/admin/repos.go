@@ -19,6 +19,7 @@ import (
 	"code.gitea.io/gitea/routers/web/explore"
 	"code.gitea.io/gitea/services/context"
 	repo_service "code.gitea.io/gitea/services/repository"
+	release_service "code.gitea.io/gitea/services/release"
 )
 
 const (
@@ -161,4 +162,60 @@ func AdoptOrDeleteRepository(ctx *context.Context) {
 		ctx.Flash.Success(ctx.Tr("repo.delete_preexisting_success", dir))
 	}
 	ctx.Redirect(setting.AppSubURL + "/admin/repos/unadopted?search=true&q=" + url.QueryEscape(q) + "&page=" + url.QueryEscape(page))
+}
+
+// VerifyAddonRelease verify the latest release of an add-on repository
+func VerifyAddonRelease(ctx *context.Context) {
+	repo, err := repo_model.GetRepositoryByID(ctx, ctx.FormInt64("id"))
+	if err != nil {
+		ctx.ServerError("GetRepositoryByID", err)
+		return
+	}
+
+	if ctx.Repo != nil && ctx.Repo.GitRepo != nil && ctx.Repo.Repository != nil && ctx.Repo.Repository.ID == repo.ID {
+		ctx.Repo.GitRepo.Close()
+	}
+
+	rel, err := repo_model.GetLatestReleaseByRepoID(ctx, repo.ID)
+	if err != nil {
+		ctx.ServerError("GetLatestReleaseByRepoID", err)
+		return
+	}
+
+	if err := release_service.VerifyAddonRelease(ctx, ctx.Doer, repo, rel); err != nil {
+		ctx.ServerError("VerifyAddonRelease", err)
+		return
+	}
+	log.Trace("Add-on repository '%s': Release with tag '%s' verified (commit '%s').", repo.FullName(), rel.TagName, rel.Sha1)
+
+	ctx.Flash.Success(ctx.Tr("Release successfully verified!"))
+	ctx.JSONRedirect(setting.AppSubURL + "/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
+}
+
+// DeleteAddonRelease delete the latest release of an add-on repository
+func RejectAddonRelease(ctx *context.Context) {
+	repo, err := repo_model.GetRepositoryByID(ctx, ctx.FormInt64("id"))
+	if err != nil {
+		ctx.ServerError("GetRepositoryByID", err)
+		return
+	}
+
+	if ctx.Repo != nil && ctx.Repo.GitRepo != nil && ctx.Repo.Repository != nil && ctx.Repo.Repository.ID == repo.ID {
+		ctx.Repo.GitRepo.Close()
+	}
+
+	rel, err := repo_model.GetLatestReleaseByRepoID(ctx, repo.ID)
+	if err != nil {
+		ctx.ServerError("GetLatestReleaseByRepoID", err)
+		return
+	}
+
+	if err := release_service.RejectAddonRelease(ctx, ctx.Doer, repo, rel, ctx.FormString("reason")); err != nil {
+		ctx.ServerError("RejectAddonRelease", err)
+		return
+	}
+	log.Trace("Add-on repository '%s': Release with tag '%s' rejected (commit '%s').", repo.FullName(), rel.TagName, rel.Sha1)
+
+	ctx.Flash.Success(ctx.Tr("Release successfully rejected!"))
+	ctx.JSONRedirect(setting.AppSubURL + "/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
 }

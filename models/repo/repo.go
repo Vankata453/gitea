@@ -184,6 +184,8 @@ type Repository struct {
 	CloseIssuesViaCommitInAnyBranch bool               `xorm:"NOT NULL DEFAULT false"`
 	Topics                          []string           `xorm:"TEXT JSON"`
 	ObjectFormatName                string             `xorm:"VARCHAR(6) NOT NULL DEFAULT 'sha1'"`
+	LatestRelease                   *Release           `xorm:"-"`
+	AddonRepository                 *api.AddonRepository `xorm:"-"`
 
 	TrustModel TrustModelType
 

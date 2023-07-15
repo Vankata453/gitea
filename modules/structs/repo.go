@@ -116,6 +116,34 @@ type Repository struct {
 	Topics        []string      `json:"topics"`
 }
 
+// AddonRepository represents a SuperTux add-on repository
+type AddonRepository struct {
+	ID           string                      `json:"id"`
+	Versions     []string                    `json:"versions"`
+	Type         string                      `json:"type"`
+	Title        string                      `json:"title"`
+	Description  string                      `json:"description"`
+	Author       string                      `json:"author"`
+	License      string                      `json:"license"`
+	URL          string                      `json:"url"`
+	MD5          string                      `json:"md5"`
+	Screenshots  *AddonRepositoryScreenshots `json:"screenshots"`
+	Dependencies []string                    `json:"dependencies"`
+}
+
+// AddonRepositoryScreenshots represents a collection of SuperTux add-on screenshots
+type AddonRepositoryScreenshots struct {
+	BaseURL string   `json:"base_url"`
+	Files   []string `json:"files"`
+}
+
+// AddonRepositoryInfo represents the contents of a SuperTux add-on repository info file
+type AddonRepositoryInfo struct { 
+	Title        string   `json:"title"`
+	License      string   `json:"license"`
+	Dependencies []string `json:"dependencies"`
+}
+
 // CreateRepoOption options when creating repository
 // swagger:model
 type CreateRepoOption struct {

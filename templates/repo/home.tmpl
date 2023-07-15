@@ -41,6 +41,12 @@
 				{{end}}
 			</div>
 		{{end}}
+		{{if and .Repository.IsPrivate (not (or .Repository.LatestRelease (eq .Owner.Name "supertux")))}}
+			<div class="ui warning message gt-text-center">
+				{{.locale.Tr "This add-on is not yet submitted for review. To mark it as ready for review, create a release."}}
+				<button class="ui primary button" style="margin-left: 10px;"><a style="color: #fff; text-decoration: none;" href="{{.RepoLink}}/releases/new">{{.locale.Tr "New release"}}</a></button>
+			</div>
+		{{end}}
 		{{template "repo/sub_menu" .}}
 		{{$n := len .TreeNames}}
 		{{$l := Eval $n "-" 1}}

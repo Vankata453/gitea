@@ -36,6 +36,7 @@ import (
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/convert"
 	"code.gitea.io/gitea/services/issue"
+	addon_service "code.gitea.io/gitea/services/addon"
 	repo_service "code.gitea.io/gitea/services/repository"
 )
 
@@ -231,6 +232,217 @@ func Search(ctx *context.APIContext) {
 		OK:   true,
 		Data: results,
 	})
+}
+
+// Search add-on repositories via options
+func SearchAddons(ctx *context.APIContext) {
+	// swagger:operation GET /repos/search repository repoSearch
+	// ---
+	// summary: Search for repositories
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: q
+	//   in: query
+	//   description: keyword
+	//   type: string
+	// - name: topic
+	//   in: query
+	//   description: Limit search to repositories with keyword as topic
+	//   type: boolean
+	// - name: includeDesc
+	//   in: query
+	//   description: include search of keyword within repository description
+	//   type: boolean
+	// - name: uid
+	//   in: query
+	//   description: search only for repos that the user with the given id owns or contributes to
+	//   type: integer
+	//   format: int64
+	// - name: priority_owner_id
+	//   in: query
+	//   description: repo owner to prioritize in the results
+	//   type: integer
+	//   format: int64
+	// - name: team_id
+	//   in: query
+	//   description: search only for repos that belong to the given team id
+	//   type: integer
+	//   format: int64
+	// - name: starredBy
+	//   in: query
+	//   description: search only for repos that the user with the given id has starred
+	//   type: integer
+	//   format: int64
+	// - name: private
+	//   in: query
+	//   description: include private repositories this user has access to (defaults to true)
+	//   type: boolean
+	// - name: is_private
+	//   in: query
+	//   description: show only pubic, private or all repositories (defaults to all)
+	//   type: boolean
+	// - name: template
+	//   in: query
+	//   description: include template repositories this user has access to (defaults to true)
+	//   type: boolean
+	// - name: archived
+	//   in: query
+	//   description: show only archived, non-archived or all repositories (defaults to all)
+	//   type: boolean
+	// - name: mode
+	//   in: query
+	//   description: type of repository to search for. Supported values are
+	//                "fork", "source", "mirror" and "collaborative"
+	//   type: string
+	// - name: exclusive
+	//   in: query
+	//   description: if `uid` is given, search only for repos that the user owns
+	//   type: boolean
+	// - name: sort
+	//   in: query
+	//   description: sort repos by attribute. Supported values are
+	//                "alpha", "created", "updated", "size", "git_size", "lfs_size", "stars", "forks" and "id".
+	//                Default is "alpha"
+	//   type: string
+	// - name: order
+	//   in: query
+	//   description: sort order, either "asc" (ascending) or "desc" (descending).
+	//                Default is "asc", ignored if "sort" is not specified.
+	//   type: string
+	// - name: page
+	//   in: query
+	//   description: page number of results to return (1-based)
+	//   type: integer
+	// - name: limit
+	//   in: query
+	//   description: page size of results
+	//   type: integer
+	// responses:
+	//   "200":
+	//     "$ref": "#/responses/SearchResults"
+	//   "422":
+	//     "$ref": "#/responses/validationError"
+
+	opts := &repo_model.SearchRepoOptions{
+		ListOptions:        utils.GetListOptions(ctx),
+		Actor:              ctx.Doer,
+		Keyword:            ctx.FormTrim("q"),
+		OwnerID:            ctx.FormInt64("uid"),
+		PriorityOwnerID:    ctx.FormInt64("priority_owner_id"),
+		TeamID:             ctx.FormInt64("team_id"),
+		TopicOnly:          ctx.FormBool("topic"),
+		Collaborate:        optional.None[bool](),
+		Private:            ctx.IsSigned && (ctx.FormString("private") == "" || ctx.FormBool("private")),
+		Template:           optional.None[bool](),
+		StarredByID:        ctx.FormInt64("starredBy"),
+		IncludeDescription: ctx.FormBool("includeDesc"),
+	}
+
+	if ctx.FormString("template") != "" {
+		opts.Template = optional.Some(ctx.FormBool("template"))
+	}
+
+	if ctx.FormBool("exclusive") {
+		opts.Collaborate = optional.Some(false)
+	}
+
+	mode := ctx.FormString("mode")
+	switch mode {
+	case "source":
+		opts.Fork = optional.Some(false)
+		opts.Mirror = optional.Some(false)
+	case "fork":
+		opts.Fork = optional.Some(true)
+	case "mirror":
+		opts.Mirror = optional.Some(true)
+	case "collaborative":
+		opts.Mirror = optional.Some(false)
+		opts.Collaborate = optional.Some(true)
+	case "":
+	default:
+		ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid search mode: \"%s\"", mode))
+		return
+	}
+
+	if ctx.FormString("archived") != "" {
+		opts.Archived = optional.Some(ctx.FormBool("archived"))
+	}
+
+	if ctx.FormString("is_private") != "" {
+		opts.IsPrivate = optional.Some(ctx.FormBool("is_private"))
+	}
+
+	sortMode := ctx.FormString("sort")
+	if len(sortMode) > 0 {
+		sortOrder := ctx.FormString("order")
+		if len(sortOrder) == 0 {
+			sortOrder = "asc"
+		}
+		if searchModeMap, ok := repo_model.OrderByMap[sortOrder]; ok {
+			if orderBy, ok := searchModeMap[sortMode]; ok {
+				opts.OrderBy = orderBy
+			} else {
+				ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid sort mode: \"%s\"", sortMode))
+				return
+			}
+		} else {
+			ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid sort order: \"%s\"", sortOrder))
+			return
+		}
+	}
+
+	var err error
+	repos, count, err := repo_model.SearchAddonRepository(ctx, opts)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: err.Error(),
+		})
+		return
+	}
+
+	results := make([]string, len(repos))
+	for i, repo := range repos {
+		if err = repo.LoadOwner(ctx); err != nil {
+			ctx.JSON(http.StatusInternalServerError, api.SearchError{
+				OK:    false,
+				Error: err.Error(),
+			})
+			return
+		}
+		permission, err := access_model.GetUserRepoPermission(ctx, repo, ctx.Doer)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, api.SearchError{
+				OK:    false,
+				Error: err.Error(),
+			})
+		}
+		if !permission.HasUnits() && permission.AccessMode > perm.AccessModeNone {
+			// If units is empty, it means that it's a hard-coded permission, like access_model.Permission{AccessMode: perm.AccessModeAdmin}
+			// So we need to load units for the repo, otherwise UnitAccessMode will just return perm.AccessModeNone.
+			// TODO: this logic is still not right (because unit modes are not correctly prepared)
+			//   the caller should prepare a proper "permission" before calling this function.
+			_ = repo.LoadUnits(ctx) // the error is not important, so ignore it
+			permission.SetUnitsWithDefaultAccessMode(repo.Units, permission.AccessMode)
+		}
+
+		opts := &addon_service.AddonRepositoryConvertOptions{
+			ID: repo.ID,
+			Name: repo.Name,
+			OwnerName: repo.OwnerName,
+			Topics: repo.Topics,
+			Description: repo.Description,
+		}
+		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts)
+		if err != nil {
+			log.Warn("Loading an add-on repository in API failed: %v", err.Error())
+		}
+		results[i] = resultEntry
+	}
+	ctx.SetLinkHeader(int(count), opts.PageSize)
+	ctx.SetTotalCountHeader(count)
+	ctx.PlainText(http.StatusOK, addon_service.ToSexpAddonIndex(results))
 }
 
 // CreateUserRepo create a repository for a user

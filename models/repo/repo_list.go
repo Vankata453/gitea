@@ -17,6 +17,7 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/util"
+	addon_service "code.gitea.io/gitea/services/addon"
 
 	"xorm.io/builder"
 )
@@ -124,7 +125,7 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 		repos[i].Owner = users[repos[i].OwnerID]
 	}
 
-	// Load primary language.
+	// Load primary language, latest release and add-on repository data.
 	stats := make(LanguageStatList, 0, len(repos))
 	if err := db.GetEngine(ctx).
 		Where("`is_primary` = ? AND `language` != ?", true, "other").
@@ -138,6 +139,20 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 			if st.RepoID == repos[i].ID {
 				repos[i].PrimaryLanguage = st
 				break
+			}
+			if rel, err := GetLatestReleaseByRepoID(ctx, repos[i].ID); err == nil {
+				repos[i].LatestRelease = rel;
+			}
+
+			opts := &addon_service.AddonRepositoryConvertOptions{
+				ID: repos[i].ID,
+				Name: repos[i].Name,
+				OwnerName: repos[i].OwnerName,
+				Topics: repos[i].Topics,
+				Description: repos[i].Description,
+			}
+			if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
+				repos[i].AddonRepository = addon;
 			}
 		}
 	}
@@ -554,6 +569,13 @@ func SearchRepository(ctx context.Context, opts *SearchRepoOptions) (RepositoryL
 // CountRepository counts repositories based on search options,
 func CountRepository(ctx context.Context, opts *SearchRepoOptions) (int64, error) {
 	return db.GetEngine(ctx).Where(SearchRepositoryCondition(opts)).Count(new(Repository))
+}
+
+// SearchAddonRepository returns repositories based on search options and add-on filters,
+// it returns results in given range and number of total results.
+func SearchAddonRepository(ctx context.Context, opts *SearchRepoOptions) (RepositoryList, int64, error) {
+	cond := AddonRepositoryCondition(SearchRepositoryCondition(opts))
+	return SearchRepositoryByCondition(ctx, opts, cond, true)
 }
 
 // SearchRepositoryByCondition search repositories by condition
