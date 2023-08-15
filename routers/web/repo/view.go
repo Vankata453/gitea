@@ -1028,6 +1028,11 @@ func renderCode(ctx *context.Context) {
 		}
 	}
 
+	// Add latest release
+	if rel, err := repo_model.GetLatestReleaseByRepoID(ctx.Repo.Repository.ID); err == nil {
+		ctx.Repo.Repository.LatestRelease = rel;
+	}
+
 	ctx.Data["Paths"] = paths
 	ctx.Data["TreeLink"] = treeLink
 	ctx.Data["TreeNames"] = treeNames

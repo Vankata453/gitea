@@ -87,7 +87,7 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 		repos[i].Owner = users[repos[i].OwnerID]
 	}
 
-	// Load primary language.
+	// Load primary language and latest release.
 	stats := make(LanguageStatList, 0, len(repos))
 	if err := db.GetEngine(ctx).
 		Where("`is_primary` = ? AND `language` != ?", true, "other").
@@ -101,6 +101,9 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 			if st.RepoID == repos[i].ID {
 				repos[i].PrimaryLanguage = st
 				break
+			}
+			if rel, err := GetLatestReleaseByRepoID(repos[i].ID); err == nil {
+				repos[i].LatestRelease = rel;
 			}
 		}
 	}

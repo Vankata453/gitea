@@ -23,6 +23,7 @@
 							{{SortArrow "mostforks" "fewestforks" $.SortType false}}
 						</th>
 						<th>{{.locale.Tr "admin.repos.issues"}}</th>
+						<th>{{.locale.Tr "Latest release"}}</th>
 						<th  data-sortt-asc="size" data-sortt-desc="reversesize">
 							{{.locale.Tr "admin.repos.size"}}
 							{{SortArrow "size" "reversesize" $.SortType false}}
@@ -33,7 +34,7 @@
 				</thead>
 				<tbody>
 					{{range .Repos}}
-						{{if not (or .IsTemplate (not .IsPrivate) .IsFork .IsMirror (eq .Owner.Name "supertux"))}}
+						{{if not (or .IsTemplate (not .IsPrivate) (not .LatestRelease) .IsFork .IsMirror (eq .Owner.Name "supertux"))}}
 							<tr>
 								<td>{{.ID}}</td>
 								<td>
@@ -56,6 +57,7 @@
 								<td>{{.NumStars}}</td>
 								<td>{{.NumForks}}</td>
 								<td>{{.NumIssues}}</td>
+								<td><a href="{{.Link}}/releases/tag/{{.LatestRelease.TagName}}">{{.LatestRelease.Title}} ({{.LatestRelease.TagName}})</a></td>
 								<td>{{FileSize .Size}}</td>
 								<td><span title="{{.CreatedUnix.FormatLong}}"><time data-format="short-date" datetime="{{.CreatedUnix.FormatLong}}">{{.CreatedUnix.FormatShort}}</time></span></td>
 								<td>
