@@ -31,7 +31,7 @@
 							{{ctx.Locale.Tr "admin.repos.lfs_size"}}
 							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
 						</th>
-						<th>{{ctx.Locale.Tr "admin.auths.updated"}}</th>
+						<th>{{ctx.Locale.Tr "Release Created"}}</th>
 						<th>{{ctx.Locale.Tr "admin.users.created"}}</th>
 						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
 					</tr>
@@ -66,7 +66,7 @@
 								<td>{{.NumIssues}}</td>
 								<td>{{FileSize .GitSize}}</td>
 								<td>{{FileSize .LFSSize}}</td>
-								<td>{{DateTime "short" .UpdatedUnix}}</td>
+								<td><span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span></td>
 								<td>{{DateTime "short" .CreatedUnix}}</td>
 								<td>
 									<button class="ui green button" onclick="window.location.href='{{.Link}}/settings';">{{ctx.Locale.Tr "Configure"}}</button>
@@ -189,6 +189,7 @@
 							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
 						</th>
 						<th>{{ctx.Locale.Tr "admin.auths.updated"}}</th>
+						<th>{{ctx.Locale.Tr "Last Release"}}</th>
 						<th>{{ctx.Locale.Tr "admin.users.created"}}</th>
 						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
 					</tr>
@@ -223,6 +224,12 @@
 								<td>{{FileSize .GitSize}}</td>
 								<td>{{FileSize .LFSSize}}</td>
 								<td>{{DateTime "short" .UpdatedUnix}}</td>
+								<td>
+									<span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span>
+									{{if not (eq .LatestRelease.Sha1 (index .AddonRepository.Versions 0))}}
+										<span class="ui yellow label">{{ctx.Locale.Tr "Pending"}}</span>
+									{{end}}
+								</td>
 								<td>{{DateTime "short" .CreatedUnix}}</td>
 								<td><a class="delete-button" href="" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a></td>
 							</tr>
