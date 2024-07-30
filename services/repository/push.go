@@ -13,7 +13,6 @@ import (
 	"code.gitea.io/gitea/models/db"
 	git_model "code.gitea.io/gitea/models/git"
 	repo_model "code.gitea.io/gitea/models/repo"
-	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/cache"
 	"code.gitea.io/gitea/modules/git"
@@ -295,15 +294,6 @@ func pushUpdates(optsList []*repo_module.PushUpdateOptions) error {
 	// Change repository last updated time.
 	if err := repo_model.UpdateRepositoryUpdatedTime(repo.ID, time.Now()); err != nil {
 		return fmt.Errorf("UpdateRepositoryUpdatedTime: %w", err)
-	}
-
-	// If an add-on repository, re-generate the add-on index data.
-	if repo_model.IsAddonRepository(repo) {
-		log.Warn("Regenerating add-on index data for repository \"" + repo.Name + "\", because of a push.")
-		err := addon_repo_model.RegenerateAddonRepositoryData(graceful.GetManager().HammerContext(), repo)
-		if err != nil {
-			log.Error("Failed to regenerate add-on index data for repository \"" + repo.Name + "\": %v", err.Error())
-		}
 	}
 
 	return nil

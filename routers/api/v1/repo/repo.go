@@ -31,6 +31,7 @@ import (
 	"code.gitea.io/gitea/routers/api/v1/utils"
 	"code.gitea.io/gitea/services/convert"
 	"code.gitea.io/gitea/services/issue"
+	addon_service "code.gitea.io/gitea/services/addon"
 	repo_service "code.gitea.io/gitea/services/repository"
 )
 
@@ -322,14 +323,15 @@ func GetAddons(ctx *context.APIContext) {
 			})
 			return
 		}
-		permission, err := access_model.GetUserRepoPermission(ctx, repo, ctx.Doer)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, api.SearchError{
-				OK:    false,
-				Error: err.Error(),
-			})
+
+		opts := &addon_service.AddonRepositoryConvertOptions{
+			ID: repo.ID,
+			Name: repo.Name,
+			OwnerName: repo.OwnerName,
+			Topics: repo.Topics,
+			Description: repo.Description,
 		}
-		resultEntry, err := convert.ToSexpAddonRepo(ctx, repo, permission)
+		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts)
 		if err != nil {
 			log.Warn("Loading an add-on repository in API failed: %v", err.Error())
 		}
@@ -337,7 +339,7 @@ func GetAddons(ctx *context.APIContext) {
 	}
 	ctx.SetLinkHeader(int(count), opts.PageSize)
 	ctx.SetTotalCountHeader(count)
-	ctx.PlainText(http.StatusOK, convert.ToSexpAddonIndex(results))
+	ctx.PlainText(http.StatusOK, addon_service.ToSexpAddonIndex(results))
 }
 
 // CreateUserRepo create a repository for a user

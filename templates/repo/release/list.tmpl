@@ -25,6 +25,9 @@
 									{{else if not .IsTag}}
 										<span class="ui green label gt-ml-3 gt-mt-1">{{$.locale.Tr "repo.release.stable"}}</span>
 									{{end}}
+									{{if .IsVerified}}
+										<span class="ui green label gt-ml-3 gt-mt-1">{{$.locale.Tr "Verified"}}</span>
+									{{end}}
 								</h4>
 								<div class="gt-df gt-ac">
 									{{if and $.CanCreateRelease (not .IsTag)}}

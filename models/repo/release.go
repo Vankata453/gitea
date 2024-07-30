@@ -83,6 +83,9 @@ type Release struct {
 	IsDraft          bool               `xorm:"NOT NULL DEFAULT false"`
 	IsPrerelease     bool               `xorm:"NOT NULL DEFAULT false"`
 	IsTag            bool               `xorm:"NOT NULL DEFAULT false"` // will be true only if the record is a tag and has no related releases
+	IsVerified       bool               `xorm:"NOT NULL DEFAULT false"` // Determines if the release is a verified add-on release
+	IsRejected       bool               `xorm:"NOT NULL DEFAULT false"` // Determines if the release is a rejected add-on release
+	RejectionReason  string             `xorm:"TEXT"` // Rejection reason for an add-on release
 	Attachments      []*Attachment      `xorm:"-"`
 	CreatedUnix      timeutil.TimeStamp `xorm:"INDEX"`
 }
@@ -253,7 +256,16 @@ func GetReleasesByRepoID(ctx context.Context, repoID int64, opts FindReleasesOpt
 	}
 
 	rels := make([]*Release, 0, opts.PageSize)
-	return rels, sess.Find(&rels)
+
+	err := sess.Find(&rels)
+	if err != nil {
+		return nil, err
+	}
+	for _, rel := range rels {
+		rel.LoadAttributes(ctx)
+	}
+
+	return rels, nil
 }
 
 // GetTagNamesByRepoID returns a list of release tag names of repository.

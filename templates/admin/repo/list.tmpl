@@ -72,6 +72,76 @@
 		</div>
 		<br />
 		<h4 class="ui top attached header">
+			{{.locale.Tr "Add-on update requests"}}
+		</h4>
+		<div class="ui attached table segment">
+			<table class="ui very basic striped table unstackable">
+				<thead>
+					<tr>
+						<th data-sortt-asc="oldest" data-sortt-desc="newest">ID{{SortArrow "oldest" "newest" $.SortType false}}</th>
+						<th>{{.locale.Tr "admin.repos.owner"}}</th>
+						<th data-sortt-asc="alphabetically" data-sortt-desc="reversealphabetically">
+							{{.locale.Tr "admin.repos.name"}}
+							{{SortArrow "alphabetically" "reversealphabetically" $.SortType false}}
+						</th>
+						<th>{{.locale.Tr "admin.repos.watches"}}</th>
+						<th  data-sortt-asc="moststars" data-sortt-desc="feweststars">
+							{{.locale.Tr "admin.repos.stars"}}
+							{{SortArrow "moststars" "feweststars" $.SortType false}}
+						</th>
+						<th  data-sortt-asc="mostforks" data-sortt-desc="fewestforks">
+							{{.locale.Tr "admin.repos.forks"}}
+							{{SortArrow "mostforks" "fewestforks" $.SortType false}}
+						</th>
+						<th>{{.locale.Tr "admin.repos.issues"}}</th>
+						<th>{{.locale.Tr "Latest release"}}</th>
+						<th  data-sortt-asc="size" data-sortt-desc="reversesize">
+							{{.locale.Tr "admin.repos.size"}}
+							{{SortArrow "size" "reversesize" $.SortType false}}
+						</th>
+						<th>{{.locale.Tr "Release Date"}}</th>
+						<th>{{.locale.Tr "Operations"}}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{range .Repos}}
+						{{if not (or .IsPrivate (not .LatestRelease) (not .AddonRepository) (eq .LatestRelease.Sha1 (index .AddonRepository.Versions 0)))}}
+							<tr>
+								<td>{{.ID}}</td>
+								<td>
+									<a href="{{.Owner.HomeLink}}">{{.Owner.Name}}</a>
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="text gold">{{svg "octicon-lock"}}</span>
+									{{end}}
+								</td>
+								<td>
+									<a href="{{.Link}}">{{.Name}}</a>
+									{{if .IsArchived}}
+										<span class="ui basic mini label">{{$.locale.Tr "repo.desc.archived"}}</span>
+									{{end}}
+									{{if .Owner.Visibility.IsPrivate}}
+										<span class="ui basic mini label">{{$.locale.Tr "repo.desc.internal"}}</span>
+									{{end}}
+								</td>
+								<td>{{.NumWatches}}</td>
+								<td>{{.NumStars}}</td>
+								<td>{{.NumForks}}</td>
+								<td>{{.NumIssues}}</td>
+								<td><a href="{{.Link}}/releases/tag/{{.LatestRelease.TagName}}">{{.LatestRelease.Title}} ({{.LatestRelease.TagName}})</a></td>
+								<td>{{FileSize .Size}}</td>
+								<td><span title="{{.LatestRelease.CreatedUnix.FormatLong}}"><time data-format="short-date" datetime="{{.LatestRelease.CreatedUnix.FormatLong}}">{{.LatestRelease.CreatedUnix.FormatShort}}</time></span></td>
+								<td>
+									<a class="ui green button" href="" data-url="{{$.Link}}/release/verify?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}">{{$.locale.Tr "Verify"}}</a>
+									<a class="ui red button" href="" data-url="{{$.Link}}/release/reject?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-reason="sample reason">{{$.locale.Tr "Reject"}}</a>
+								</td>
+							</tr>
+						{{end}}
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+		<br />
+		<h4 class="ui top attached header">
 			{{.locale.Tr "Add-on repository management"}}
 		</h4>
 		<div class="ui attached table segment">

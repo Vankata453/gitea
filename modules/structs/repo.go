@@ -112,7 +112,7 @@ type Repository struct {
 // AddonRepository represents a SuperTux add-on repository
 type AddonRepository struct {
 	ID           string                      `json:"id"`
-	Version      string                      `json:"version"`
+	Versions     []string                    `json:"versions"`
 	Type         string                      `json:"type"`
 	Title        string                      `json:"title"`
 	Description  string                      `json:"description"`

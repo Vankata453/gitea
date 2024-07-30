@@ -15,7 +15,6 @@ import (
 
 	"code.gitea.io/gitea/models/db"
 	"code.gitea.io/gitea/models/unit"
-	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
@@ -173,6 +172,7 @@ type Repository struct {
 	CloseIssuesViaCommitInAnyBranch bool               `xorm:"NOT NULL DEFAULT false"`
 	Topics                          []string           `xorm:"TEXT JSON"`
 	LatestRelease                   *Release           `xorm:"-"`
+	AddonRepository                 *api.AddonRepository `xorm:"-"`
 
 	TrustModel TrustModelType
 

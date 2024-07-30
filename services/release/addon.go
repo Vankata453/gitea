@@ -1,0 +1,152 @@
+// Copyright 2023 Vankata453
+// SPDX-License-Identifier: MIT
+
+package release
+
+import (
+	"io"
+	"os"
+	"context"
+	"errors"
+	"strings"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/base64"
+
+	"code.gitea.io/gitea/models/db"
+	repo_model "code.gitea.io/gitea/models/repo"
+	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
+	user_model "code.gitea.io/gitea/models/user"
+	"code.gitea.io/gitea/modules/git"
+	files_service "code.gitea.io/gitea/services/repository/files"
+	archiver_service "code.gitea.io/gitea/services/repository/archiver"
+)
+
+func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, rel *repo_model.Release) error {
+	// Only Gitea admins can verify add-on releases
+	if (!doer.IsAdmin) {
+		return errors.New("Only admins can verify add-on releases.")
+	}
+
+	// Attempt to load saved data for the add-on repository from the database
+	addonDBInfo := &addon_repo_model.AddonRepository{
+		RepoID: repo.ID,
+	}
+	hasDBInfo, err := db.GetEngine(ctx).Get(addonDBInfo)
+	if err != nil {
+		return err
+	}
+	if hasDBInfo && len(addonDBInfo.VerifiedCommits) > 0 &&
+			addonDBInfo.VerifiedCommits[0] == rel.Sha1 {
+		return nil // There is nothing to update.
+	}
+
+	// PROCEED WITH REGENERATING DATA
+
+	// Prepend the release's commit to the verified commits array.
+	addonDBInfo.VerifiedCommits = append([]string{rel.Sha1}, addonDBInfo.VerifiedCommits...)
+
+	// Open the repository
+	gitRepo, err := git.OpenRepository(git.DefaultContext, repo_model.RepoPath(repo.OwnerName, repo.Name))
+	if err != nil {
+		return err
+	}
+	// Close the repository
+	defer gitRepo.Close()
+
+	// Make sure an archive of the latest commit is created, if data not available in the database
+	archiveRequest, err := archiver_service.NewRequest(repo.ID, gitRepo, rel.Sha1 + ".zip")
+	if err != nil {
+		return err
+	}
+	archiver, err := archiveRequest.Await(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get MD5 checksum of the archive
+	archiveFile, err := os.Open("data/repo-archive/" + archiver.RelativePath())
+	if err != nil {
+		return err
+	}
+	defer archiveFile.Close()
+
+	md5Hash := md5.New()
+	_, err = io.Copy(md5Hash, archiveFile)
+	if err != nil {
+		return err
+	}
+	addonDBInfo.Md5 = hex.EncodeToString(md5Hash.Sum(nil)[:])
+
+	// Get the "info" file from the default branch
+	commit, err := gitRepo.GetCommit(rel.Sha1)
+	if err != nil {
+		return err
+	}
+	fileResponse, err := files_service.GetFileResponseFromCommit(ctx, repo, commit, rel.TagName, "info")
+	if err != nil {
+		return err
+	}
+	infoContent, err := base64.StdEncoding.DecodeString(*fileResponse.Content.Content)
+	if err != nil {
+		return err
+	}
+	addonDBInfo.InfoFile = string(infoContent)
+
+	// Get all screenshot files from the Git tree
+	var screenshots []string
+	repoTree, err := gitRepo.GetTree(rel.Sha1)
+	if err != nil || repoTree == nil {
+		return err
+	}
+	entries, err := repoTree.ListEntriesRecursiveWithSize()
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		entryName := entry.Name()
+		if strings.HasPrefix(entryName, "screenshots/") {
+			scrName := strings.TrimPrefix(entryName, "screenshots/")
+			// Make sure the file has an extension and is not found in a sub-directory.
+			if !strings.Contains(scrName, ".") || strings.Contains(scrName, "/")  {
+				continue
+			}
+			screenshots = append(screenshots, scrName)
+		}
+	}
+	addonDBInfo.Screenshots = strings.Join(screenshots, "/")
+
+	// Insert new add-on data entry into the table
+	_, err = db.GetEngine(ctx).Insert(addonDBInfo)
+	if err != nil {
+		return errors.New("Cannot insert database entry for add-on repository \"" + repo.Name + "\": " + err.Error())
+	}
+
+	// Set release to verified, insert into database
+	rel.IsVerified = true
+	rel.IsRejected = false
+	_, err = db.GetEngine(ctx).Insert(rel)
+	if err != nil {
+		return errors.New("Cannot insert database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
+	}
+
+	return nil
+}
+
+func RejectAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, rel *repo_model.Release, reason string) error {
+	// Only Gitea admins can reject add-on releases
+	if (!doer.IsAdmin) {
+		return errors.New("Only admins can reject add-on releases.")
+	}
+
+	// Set release to rejected, set rejection reason, insert into database
+	rel.IsVerified = false
+	rel.IsRejected = true
+	rel.RejectionReason = reason
+	_, err := db.GetEngine(ctx).Insert(rel)
+	if err != nil {
+		return errors.New("Cannot insert database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
+	}
+
+	return nil
+}

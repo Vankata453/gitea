@@ -592,6 +592,10 @@ func registerRoutes(m *web.Route) {
 			m.Get("", admin.Repos)
 			m.Combo("/unadopted").Get(admin.UnadoptedRepos).Post(admin.AdoptOrDeleteRepository)
 			m.Post("/delete", admin.DeleteRepo)
+			m.Group("/release", func() {
+				m.Post("/verify", admin.VerifyAddonRelease)
+				m.Post("/reject", admin.RejectAddonRelease)
+			})
 		})
 
 		m.Group("/packages", func() {
