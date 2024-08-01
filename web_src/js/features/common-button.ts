@@ -43,16 +43,23 @@ export function initGlobalDeleteButton() {
       $(modal).modal({
         closable: false,
         onApprove: async () => {
+          let postData = new FormData();
+
           // if `data-type="form"` exists, then submit the form by the selector provided by `data-form="..."`
-          if (btn.getAttribute('data-type') === 'form') {
+          const integratedForm = btn.getAttribute('data-type') === 'form-integrated';
+          if (integratedForm || btn.getAttribute('data-type') === 'form') {
             const formSelector = btn.getAttribute('data-form');
             const form = document.querySelector(formSelector);
             if (!form) throw new Error(`no form named ${formSelector} found`);
-            form.submit();
+            if (integratedForm) { // integrated forms have their data pushed to postData
+              postData = new FormData(form);
+              form.reset();
+            } else {
+              form.submit();
+            }
           }
 
           // prepare an AJAX form by data attributes
-          const postData = new FormData();
           for (const [key, value] of Object.entries(dataObj)) {
             if (key.startsWith('data')) { // for data-data-xxx (HTML) -> dataXxx (form)
               postData.append(key.slice(4), value);

@@ -69,7 +69,7 @@
 								<td><span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span></td>
 								<td>{{DateTime "short" .CreatedUnix}}</td>
 								<td>
-									<button class="ui green button" onclick="window.location.href='{{.Link}}/settings';">{{ctx.Locale.Tr "Configure"}}</button>
+									<button class="ui primary button" onclick="window.open('{{.Link}}/settings', '_blank');">{{ctx.Locale.Tr "Configure"}}</button>
 									<a class="delete-button" href="" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a>
 								</td>
 							</tr>
@@ -111,13 +111,15 @@
 							{{ctx.Locale.Tr "admin.repos.lfs_size"}}
 							{{SortArrow "lfssize" "reverselfssize" $.SortType false}}
 						</th>
+						<th>{{ctx.Locale.Tr "Release Title"}}</th>
 						<th>{{ctx.Locale.Tr "Release Created"}}</th>
+						<th>{{ctx.Locale.Tr "Details"}}</th>
 						<th>{{ctx.Locale.Tr "admin.notices.op"}}</th>
 					</tr>
 				</thead>
 				<tbody>
 					{{range .Repos}}
-						{{if not (or .IsPrivate (not .LatestRelease) (not .AddonRepository) (eq .LatestRelease.Sha1 (index .AddonRepository.Versions 0)))}}
+						{{if not (or .IsPrivate (not .LatestRelease) (or .LatestRelease.IsVerified .LatestRelease.IsRejected))}}
 							<tr>
 								<td>{{.ID}}</td>
 								<td>
@@ -144,10 +146,18 @@
 								<td>{{.NumIssues}}</td>
 								<td>{{FileSize .GitSize}}</td>
 								<td>{{FileSize .LFSSize}}</td>
+								<td><b>{{.LatestRelease.Title}}</b></td>
 								<td><span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span></td>
 								<td>
-									<a class="ui green button" href="" data-url="{{$.Link}}/release/verify?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}">{{ctx.Locale.Tr "Verify"}}</a>
-									<a class="ui red button" href="" data-url="{{$.Link}}/release/reject?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-reason="sample reason">{{ctx.Locale.Tr "Reject"}}</a>
+									{{if .AddonRepository}}
+										<button class="ui primary button" onclick="window.open('{{.Link}}/compare/{{index .AddonRepository.Versions 0}}...{{.LatestRelease.Sha1}}', '_blank');">{{ctx.Locale.Tr "Compare"}}</button>
+									{{else}}
+										<button class="ui primary button" disabled>{{ctx.Locale.Tr "Compare"}}</button>
+									{{end}}
+								</td>
+								<td>
+									<a class="ui green button delete-button" href="" data-modal-id="verify-modal" data-url="{{$.Link}}/release/verify?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Verify"}}</a>
+									<a class="ui red button delete-button" href="" data-modal-id="reject-modal" data-type="form-integrated" data-form="#rejection-reason-form" data-url="{{$.Link}}/release/reject?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Reject"}}</a>
 								</td>
 							</tr>
 						{{end}}
@@ -226,12 +236,16 @@
 								<td>{{DateTime "short" .UpdatedUnix}}</td>
 								<td>
 									<span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span>
-									{{if not (eq .LatestRelease.Sha1 (index .AddonRepository.Versions 0))}}
+									{{if .LatestRelease.IsVerified}}
+										<span class="ui green label">{{ctx.Locale.Tr "Verified"}}</span>
+									{{else if .LatestRelease.IsRejected}}
+										<span class="ui red label">{{ctx.Locale.Tr "Rejected"}}</span>	
+									{{else}}
 										<span class="ui yellow label">{{ctx.Locale.Tr "Pending"}}</span>
 									{{end}}
 								</td>
 								<td>{{DateTime "short" .CreatedUnix}}</td>
-								<td><a class="delete-button" href="" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a></td>
+								<td><a class="delete-button" href="" data-form="#rejection-reason-form" data-url="{{$.Link}}/delete?page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-id="{{.ID}}" data-name="{{.Name}}">{{svg "octicon-trash"}}</a></td>
 							</tr>
 						{{end}}
 					{{end}}
@@ -343,6 +357,30 @@
 		<p>{{ctx.Locale.Tr "repo.settings.delete_desc"}}</p>
 		{{ctx.Locale.Tr "repo.settings.delete_notices_2" (`<span class="name"></span>`|SafeHTML)}}<br>
 		{{ctx.Locale.Tr "repo.settings.delete_notices_fork_1"}}<br>
+	</div>
+	{{template "base/modal_actions_confirm" .}}
+</div>
+
+<div class="ui g-modal-confirm delete modal" id="verify-modal">
+	<div class="header">
+		{{ctx.Locale.Tr "Verify Add-on"}}
+	</div>
+	<div class="content">
+		<p>{{ctx.Locale.Tr (printf "Are you sure you want to verify the latest release \"%s\" of %s?" "<b class=\"release-title\"></b>" "<b class=\"name\"></b>")}}</p>
+	</div>
+	{{template "base/modal_actions_confirm" .}}
+</div>
+
+<div class="ui g-modal-confirm delete modal" id="reject-modal">
+	<div class="header">
+		{{ctx.Locale.Tr "Reject Add-on"}}
+	</div>
+	<div class="content">
+		<p>{{ctx.Locale.Tr (printf "Are you sure you want to reject the latest release \"%s\" of %s?" "<b class=\"release-title\"></b>" "<b class=\"name\"></b>")}}</p>
+		 <form id="rejection-reason-form">
+			<label for="rejection-reason">{{ctx.Locale.Tr "Rejection reason:"}}</label><br>
+			<input type="text" id="rejection-reason" name="reason">
+		</form> 
 	</div>
 	{{template "base/modal_actions_confirm" .}}
 </div>
