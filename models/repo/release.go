@@ -90,6 +90,7 @@ type Release struct {
 	RejectionReason  string             `xorm:"TEXT"` // Rejection reason for an add-on release
 	Attachments      []*Attachment      `xorm:"-"`
 	CreatedUnix      timeutil.TimeStamp `xorm:"INDEX"`
+	ReviewedUnix     timeutil.TimeStamp `xorm:"INDEX"`
 }
 
 func init() {

@@ -18,6 +18,7 @@ import (
 	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/git"
+	"code.gitea.io/gitea/modules/timeutil"
 	files_service "code.gitea.io/gitea/services/repository/files"
 	archiver_service "code.gitea.io/gitea/services/repository/archiver"
 )
@@ -117,17 +118,26 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	addonDBInfo.Screenshots = strings.Join(screenshots, "/")
 
 	// Insert new add-on data entry into the table
-	_, err = db.GetEngine(ctx).Insert(addonDBInfo)
-	if err != nil {
-		return errors.New("Cannot insert database entry for add-on repository \"" + repo.Name + "\": " + err.Error())
+	if hasDBInfo {
+		_, err = db.GetEngine(ctx).ID(addonDBInfo.ID).AllCols().Update(addonDBInfo)
+		if err != nil {
+			return errors.New("Cannot update database entry for add-on repository \"" + repo.Name + "\": " + err.Error())
+		}
+	} else {
+		_, err = db.GetEngine(ctx).Insert(addonDBInfo)
+		if err != nil {
+			return errors.New("Cannot insert database entry for add-on repository \"" + repo.Name + "\": " + err.Error())
+		}
 	}
 
 	// Set release to verified, insert into database
 	rel.IsVerified = true
 	rel.IsRejected = false
-	_, err = db.GetEngine(ctx).Insert(rel)
+	rel.RejectionReason = ""
+	rel.ReviewedUnix = timeutil.TimeStampNow()
+	_, err = db.GetEngine(ctx).ID(rel.ID).Cols("is_verified", "is_rejected", "rejection_reason", "reviewed_unix").Update(rel)
 	if err != nil {
-		return errors.New("Cannot insert database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
+		return errors.New("Cannot update database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
 	}
 
 	return nil
@@ -143,9 +153,10 @@ func RejectAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	rel.IsVerified = false
 	rel.IsRejected = true
 	rel.RejectionReason = reason
-	_, err := db.GetEngine(ctx).Insert(rel)
+	rel.ReviewedUnix = timeutil.TimeStampNow()
+	_, err := db.GetEngine(ctx).ID(rel.ID).Cols("is_verified", "is_rejected", "rejection_reason", "reviewed_unix").Update(rel)
 	if err != nil {
-		return errors.New("Cannot insert database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
+		return errors.New("Cannot update database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
 	}
 
 	return nil
