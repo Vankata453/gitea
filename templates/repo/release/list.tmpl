@@ -28,9 +28,9 @@
 									<span class="ui green label">{{ctx.Locale.Tr "repo.release.stable"}}</span>
 								{{end}}
 								{{if $release.IsVerified}}
-									<span class="ui purple label">{{ctx.Locale.Tr "Verified"}}</span>
+									<span class="ui purple label">{{ctx.Locale.Tr (printf "Verified on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
 								{{else if $release.IsRejected}}
-									<span class="ui red label">{{ctx.Locale.Tr "Rejected"}}</span>
+									<span class="ui red label" data-tooltip-content="{{$release.RejectionReason}}" data-tooltip-interactive="true">{{ctx.Locale.Tr (printf "Rejected on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
 								{{end}}
 							</h4>
 							<div>

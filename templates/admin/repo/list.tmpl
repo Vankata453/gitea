@@ -237,9 +237,9 @@
 								<td>
 									<span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span>
 									{{if .LatestRelease.IsVerified}}
-										<span class="ui green label">{{ctx.Locale.Tr "Verified"}}</span>
+										<span class="ui green label">{{ctx.Locale.Tr (printf "Verified on %s" (DateTime "short" .LatestRelease.ReviewedUnix))}}</span>
 									{{else if .LatestRelease.IsRejected}}
-										<span class="ui red label">{{ctx.Locale.Tr "Rejected"}}</span>	
+										<span class="ui red label" data-tooltip-content="{{.LatestRelease.RejectionReason}}" data-tooltip-interactive="true">{{ctx.Locale.Tr (printf "Rejected on %s" (DateTime "short" .LatestRelease.ReviewedUnix))}}</span>	
 									{{else}}
 										<span class="ui yellow label">{{ctx.Locale.Tr "Pending"}}</span>
 									{{end}}
