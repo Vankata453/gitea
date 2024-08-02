@@ -4,6 +4,7 @@
 package addon
 
 import (
+	"fmt"
 	"context"
 	"errors"
 	"net/url"
@@ -66,10 +67,13 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 
 	// List all screenshots
 	screenshots := strings.Split(addonDBInfo.Screenshots, "/")
+	if len(screenshots) == 1 && screenshots[0] == "" {
+		screenshots = nil
+	}
 
 	// Return API add-on repository as a result
 	return &api.AddonRepository{
-		ID: opts.Name,
+		ID: fmt.Sprintf("%s_%d", opts.Name, opts.ID),
 		Versions: addonDBInfo.VerifiedCommits,
 		Type: addonType,
 		Title: info.Title,
@@ -77,6 +81,7 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		Author: opts.OwnerName,
 		License: info.License,
 		URL: opts.HTMLURL() + "/archive/" + addonDBInfo.VerifiedCommits[0] + ".zip",
+		UpdateURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),
 		MD5: addonDBInfo.Md5,
 		Screenshots: &api.AddonRepositoryScreenshots{
 			BaseURL: opts.HTMLURL() + "/raw/commit/" + addonDBInfo.VerifiedCommits[0] + "/screenshots/",
@@ -105,6 +110,7 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (
 	entry += "  (author \"" + addonRepo.Author + "\")\n"
 	entry += "  (license \"" + addonRepo.License + "\")\n"
 	entry += "  (url \"" + addonRepo.URL + "\")\n"
+	entry += "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
 	entry += "  (md5 \"" + addonRepo.MD5 + "\")\n"
 	if len(addonRepo.Screenshots.Files) > 0 { // Add-on screenshot files are available
 		entry += "  (screenshots\n"

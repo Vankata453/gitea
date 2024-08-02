@@ -236,11 +236,11 @@ func Search(ctx *context.APIContext) {
 
 // Search add-on repositories via options
 func SearchAddons(ctx *context.APIContext) {
-	// swagger:operation GET /repos/search repository repoSearch
+	// swagger:operation GET /repos/addons repository repoSearch
 	// ---
 	// summary: Search for repositories
 	// produces:
-	// - application/json
+	// - document
 	// parameters:
 	// - name: q
 	//   in: query
@@ -443,6 +443,82 @@ func SearchAddons(ctx *context.APIContext) {
 	ctx.SetLinkHeader(int(count), opts.PageSize)
 	ctx.SetTotalCountHeader(count)
 	ctx.PlainText(http.StatusOK, addon_service.ToSexpAddonIndex(results))
+}
+
+// Search add-on repository via ID
+func SearchAddon(ctx *context.APIContext) {
+	// swagger:operation GET /repos/addons/{id} repository repoSearch
+	// ---
+	// summary: Search for repositories
+	// produces:
+	// - document
+	// parameters:
+	// - name: id
+	//   in: query
+	//   description: Include only the add-on with the specified ID
+	//   type: string
+	// responses:
+	//   "200":
+	//     "$ref": "#/responses/SearchResults"
+	//   "422":
+	//     "$ref": "#/responses/validationError"
+
+	// Add-on repository IDs may also be formatted as "{repo_name}_{repo_id}"
+	splitID := strings.Split(ctx.PathParam(":id"), "_")
+	repoID, err := strconv.ParseInt(splitID[len(splitID) - 1], 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: "Invalid add-on repository ID!",
+		})
+		return
+	}
+
+	repo, err := repo_model.GetRepositoryByID(ctx, repoID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: err.Error(),
+		})
+		return
+	}
+
+	if err = repo.LoadOwner(ctx); err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: err.Error(),
+		})
+		return
+	}
+	permission, err := access_model.GetUserRepoPermission(ctx, repo, ctx.Doer)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, api.SearchError{
+			OK:    false,
+			Error: err.Error(),
+		})
+	}
+	if !permission.HasUnits() && permission.AccessMode > perm.AccessModeNone {
+		// If units is empty, it means that it's a hard-coded permission, like access_model.Permission{AccessMode: perm.AccessModeAdmin}
+		// So we need to load units for the repo, otherwise UnitAccessMode will just return perm.AccessModeNone.
+		// TODO: this logic is still not right (because unit modes are not correctly prepared)
+		//   the caller should prepare a proper "permission" before calling this function.
+		_ = repo.LoadUnits(ctx) // the error is not important, so ignore it
+		permission.SetUnitsWithDefaultAccessMode(repo.Units, permission.AccessMode)
+	}
+
+	opts := &addon_service.AddonRepositoryConvertOptions{
+		ID: repo.ID,
+		Name: repo.Name,
+		OwnerName: repo.OwnerName,
+		Topics: repo.Topics,
+		Description: repo.Description,
+	}
+	resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts)
+	if err != nil {
+		log.Warn("Loading an add-on repository in API failed: %v", err.Error())
+	}
+
+	ctx.PlainText(http.StatusOK, resultEntry)
 }
 
 // CreateUserRepo create a repository for a user
