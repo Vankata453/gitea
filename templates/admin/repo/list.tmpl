@@ -156,8 +156,8 @@
 									{{end}}
 								</td>
 								<td>
-									<a class="ui green button delete-button" href="" data-modal-id="verify-modal" data-url="{{$.Link}}/release/verify?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Verify"}}</a>
-									<a class="ui red button delete-button" href="" data-modal-id="reject-modal" data-type="form-integrated" data-form="#rejection-reason-form" data-url="{{$.Link}}/release/reject?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Reject"}}</a>
+									<a class="ui green button delete-button" href="" data-modal-id="verify-modal" data-url="{{$.Link}}/release/verify?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Verify"}}</a>
+									<a class="ui red button delete-button" href="" data-modal-id="reject-modal" data-type="form-integrated" data-form="#rejection-reason-form" data-url="{{$.Link}}/release/reject?id={{.ID}}&page={{$.Page.Paginater.Current}}&sort={{$.SortType}}" data-name="{{.Name}}" data-data-release-title="{{.LatestRelease.Title}}">{{ctx.Locale.Tr "Reject"}}</a>
 								</td>
 							</tr>
 						{{end}}
@@ -366,7 +366,7 @@
 		{{ctx.Locale.Tr "Verify Add-on"}}
 	</div>
 	<div class="content">
-		<p>{{ctx.Locale.Tr (printf "Are you sure you want to verify the latest release \"%s\" of %s?" "<b class=\"release-title\"></b>" "<b class=\"name\"></b>")}}</p>
+		<p>{{ctx.Locale.Tr (printf "Are you sure you want to verify the latest release \"%s\" of %s?" "<b class=\"dataReleaseTitle\"></b>" "<b class=\"name\"></b>")}}</p>
 	</div>
 	{{template "base/modal_actions_confirm" .}}
 </div>
@@ -376,7 +376,7 @@
 		{{ctx.Locale.Tr "Reject Add-on"}}
 	</div>
 	<div class="content">
-		<p>{{ctx.Locale.Tr (printf "Are you sure you want to reject the latest release \"%s\" of %s?" "<b class=\"release-title\"></b>" "<b class=\"name\"></b>")}}</p>
+		<p>{{ctx.Locale.Tr (printf "Are you sure you want to reject the latest release \"%s\" of %s?" "<b class=\"dataReleaseTitle\"></b>" "<b class=\"name\"></b>")}}</p>
 		 <form id="rejection-reason-form">
 			<label for="rejection-reason">{{ctx.Locale.Tr "Rejection reason:"}}</label><br>
 			<input type="text" id="rejection-reason" name="reason">
