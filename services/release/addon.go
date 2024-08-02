@@ -16,6 +16,7 @@ import (
 	"code.gitea.io/gitea/models/db"
 	repo_model "code.gitea.io/gitea/models/repo"
 	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
+	activities_model "code.gitea.io/gitea/models/activities"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/timeutil"
@@ -140,6 +141,15 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 		return errors.New("Cannot update database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
 	}
 
+	err = rel.LoadAttributes(ctx)
+	if err != nil {
+		return errors.New("Error loading release attributes: " + err.Error())
+	}
+	err = activities_model.CreateReleaseReviewNotification(ctx, rel)
+	if err != nil {
+		return errors.New("Error pushing release review notification to repository owner: " + err.Error())
+	}
+
 	return nil
 }
 
@@ -157,6 +167,15 @@ func RejectAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	_, err := db.GetEngine(ctx).ID(rel.ID).Cols("is_verified", "is_rejected", "rejection_reason", "reviewed_unix").Update(rel)
 	if err != nil {
 		return errors.New("Cannot update database entry for release with tag \"" + rel.TagName + "\": " + err.Error())
+	}
+
+	err = rel.LoadAttributes(ctx)
+	if err != nil {
+		return errors.New("Error loading release attributes: " + err.Error())
+	}
+	err = activities_model.CreateReleaseReviewNotification(ctx, rel)
+	if err != nil {
+		return errors.New("Error pushing release review notification to repository owner: " + err.Error())
 	}
 
 	return nil

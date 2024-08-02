@@ -54,6 +54,14 @@
 									<span class="issue-title tw-break-anywhere">
 										{{if .Issue}}
 											{{.Issue.Title | RenderEmoji $.Context | RenderCodeBlock}}
+										{{else if .Release}}
+											{{if .Release.IsVerified}}
+												{{ctx.Locale.Tr (printf "Add-on release \"%s\" verified!" .Release.Title)}}
+											{{else if .Release.IsRejected}}
+												{{ctx.Locale.Tr (printf "Add-on release \"%s\" rejected." .Release.Title)}}
+											{{else}}
+												{{.Repository.FullName}}
+											{{end}}
 										{{else}}
 											{{.Repository.FullName}}
 										{{end}}

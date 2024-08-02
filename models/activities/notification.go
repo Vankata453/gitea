@@ -45,6 +45,8 @@ const (
 	NotificationSourceCommit
 	// NotificationSourceRepository is a notification for a repository
 	NotificationSourceRepository
+	// NotificationSourceReleaseReview is a notification for a release review
+	NotificationSourceReleaseReview
 )
 
 // Notification represents a notification
@@ -59,12 +61,14 @@ type Notification struct {
 	IssueID   int64  `xorm:"INDEX NOT NULL"`
 	CommitID  string `xorm:"INDEX"`
 	CommentID int64
+	ReleaseID int64
 
 	UpdatedBy int64 `xorm:"INDEX NOT NULL"`
 
 	Issue      *issues_model.Issue    `xorm:"-"`
 	Repository *repo_model.Repository `xorm:"-"`
 	Comment    *issues_model.Comment  `xorm:"-"`
+	Release    *repo_model.Release    `xorm:"-"`
 	User       *user_model.User       `xorm:"-"`
 
 	CreatedUnix timeutil.TimeStamp `xorm:"created INDEX NOT NULL"`
@@ -159,6 +163,18 @@ func GetIssueNotification(ctx context.Context, userID, issueID int64) (*Notifica
 	return notification, err
 }
 
+func CreateReleaseReviewNotification(ctx context.Context, release *repo_model.Release) error {
+	notification := &Notification{
+		UserID:    release.Repo.OwnerID,
+		RepoID:    release.RepoID,
+		Status:    NotificationStatusUnread,
+		ReleaseID: release.ID,
+		Source:    NotificationSourceReleaseReview,
+	}
+
+	return db.Insert(ctx, notification)
+}
+
 // LoadAttributes load Repo Issue User and Comment if not loaded
 func (n *Notification) LoadAttributes(ctx context.Context) (err error) {
 	if err = n.loadRepo(ctx); err != nil {
@@ -213,6 +229,16 @@ func (n *Notification) loadComment(ctx context.Context) (err error) {
 	return nil
 }
 
+func (n *Notification) loadRelease(ctx context.Context) (err error) {
+	if n.Release == nil {
+		n.Release, err = repo_model.GetReleaseByID(ctx, n.ReleaseID)
+		if err != nil {
+			return fmt.Errorf("GetReleaseByID [%d]: %w", n.RepoID, err)
+		}
+	}
+	return nil
+}
+
 func (n *Notification) loadUser(ctx context.Context) (err error) {
 	if n.User == nil {
 		n.User, err = user_model.GetUserByID(ctx, n.UserID)
@@ -233,6 +259,11 @@ func (n *Notification) GetIssue(ctx context.Context) (*issues_model.Issue, error
 	return n.Issue, n.loadIssue(ctx)
 }
 
+// GetIssue returns the issue of the notification
+func (n *Notification) GetRelease(ctx context.Context) (*repo_model.Release, error) {
+	return n.Release, n.loadRelease(ctx)
+}
+
 // HTMLURL formats a URL-string to the notification
 func (n *Notification) HTMLURL(ctx context.Context) string {
 	switch n.Source {
@@ -245,6 +276,9 @@ func (n *Notification) HTMLURL(ctx context.Context) string {
 		return n.Repository.HTMLURL() + "/commit/" + url.PathEscape(n.CommitID)
 	case NotificationSourceRepository:
 		return n.Repository.HTMLURL()
+	case NotificationSourceReleaseReview:
+		n.loadRelease(ctx)
+		return n.Repository.HTMLURL() + "/releases/tag/" + url.PathEscape(n.Release.TagName)
 	}
 	return ""
 }
@@ -261,6 +295,9 @@ func (n *Notification) Link(ctx context.Context) string {
 		return n.Repository.Link() + "/commit/" + url.PathEscape(n.CommitID)
 	case NotificationSourceRepository:
 		return n.Repository.Link()
+	case NotificationSourceReleaseReview:
+		n.loadRelease(ctx)
+		return n.Repository.Link() + "/releases/tag/" + url.PathEscape(n.Release.TagName)
 	}
 	return ""
 }
