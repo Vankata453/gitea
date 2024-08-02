@@ -135,11 +135,17 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (
 }
 
 // ToSexpAddonIndex combines multiple S-Expression-formatted add-on index entries.
-func ToSexpAddonIndex(entries []string) string {
+func ToSexpAddonIndex(entries []string, previousPageURL string, nextPageURL string) string {
 	var index string
 	index += "(supertux-addons\n"
 	for _, entry := range entries {
 		index += entry + "\n"
+	}
+	if previousPageURL != "" {
+		index += "(previous-page \"" + previousPageURL + "\")\n"
+	}
+	if nextPageURL != "" {
+		index += "(next-page \"" + nextPageURL + "\")\n"
 	}
 	index += ")"
 

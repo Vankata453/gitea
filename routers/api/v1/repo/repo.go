@@ -440,9 +440,16 @@ func SearchAddons(ctx *context.APIContext) {
 		}
 		results[i] = resultEntry
 	}
-	ctx.SetLinkHeader(int(count), opts.PageSize)
+
+	totalCount := int(count)
+
+	ctx.SetLinkHeader(totalCount, opts.PageSize)
 	ctx.SetTotalCountHeader(count)
-	ctx.PlainText(http.StatusOK, addon_service.ToSexpAddonIndex(results))
+	ctx.PlainText(http.StatusOK, addon_service.ToSexpAddonIndex(
+		results,
+		ctx.GenPreviousPageLink(totalCount, opts.PageSize),
+		ctx.GenNextPageLink(totalCount, opts.PageSize),
+	))
 }
 
 // Search add-on repository via ID

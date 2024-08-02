@@ -198,6 +198,40 @@ func genAPILinks(curURL *url.URL, total, pageSize, curPage int) []string {
 	return links
 }
 
+// GenPreviousPageLink returns link to previous page, if this is not the first page.
+func (ctx *APIContext) GenPreviousPageLink(total, pageSize int) string {
+	page := NewPagination(total, pageSize, ctx.FormInt("page"), 0)
+	paginater := page.Paginater
+
+	if !paginater.HasPrevious() {
+		return ""
+	}
+
+	u := *ctx.Req.URL
+	queries := u.Query()
+	queries.Set("page", fmt.Sprintf("%d", paginater.Previous()))
+	u.RawQuery = queries.Encode()
+
+	return setting.AppURL + u.RequestURI()[1:]
+}
+
+// GenNextPageLink returns link to next page, if this is not the last page.
+func (ctx *APIContext) GenNextPageLink(total, pageSize int) string {
+	page := NewPagination(total, pageSize, ctx.FormInt("page"), 0)
+	paginater := page.Paginater
+
+	if !paginater.HasNext() {
+		return ""
+	}
+
+	u := *ctx.Req.URL
+	queries := u.Query()
+	queries.Set("page", fmt.Sprintf("%d", paginater.Next()))
+	u.RawQuery = queries.Encode()
+
+	return setting.AppURL + u.RequestURI()[1:]
+}
+
 // SetLinkHeader sets pagination link header by given total number and page size.
 func (ctx *APIContext) SetLinkHeader(total, pageSize int) {
 	links := genAPILinks(ctx.Req.URL, total, pageSize, ctx.FormInt("page"))
