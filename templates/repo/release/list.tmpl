@@ -31,6 +31,8 @@
 									<span class="ui purple label">{{ctx.Locale.Tr (printf "Verified on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
 								{{else if $release.IsRejected}}
 									<span class="ui red label" data-tooltip-content="{{$release.RejectionReason}}" data-tooltip-interactive="true">{{ctx.Locale.Tr (printf "Rejected on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
+								{{else if eq $idx 0}}
+									<span class="ui yellow label">{{ctx.Locale.Tr "Pending"}}</span>
 								{{end}}
 							</h4>
 							<div>
