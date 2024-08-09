@@ -1073,6 +1073,11 @@ func renderHomeCode(ctx *context.Context) {
 		ctx.Repo.Repository.LatestRelease = rel;
 	}
 
+	// Add latest verified release
+	if rel, err := repo_model.GetLatestVerifiedReleaseByRepoID(ctx, ctx.Repo.Repository.ID); err == nil {
+		ctx.Repo.Repository.LatestVerifiedRelease = rel;
+	}
+
 	ctx.Data["Paths"] = paths
 
 	branchLink := ctx.Repo.RepoLink + "/src/" + ctx.Repo.BranchNameSubURL()

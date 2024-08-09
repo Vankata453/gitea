@@ -5,10 +5,10 @@ package repo_addon
 
 // AddonRepository represents saved data for add-on repositories
 type AddonRepository struct {
-	ID              int64    `xorm:"pk autoincr"`
-	RepoID          int64    `xorm:"index unique(s)"`
-	VerifiedCommits []string `xorm:"TEXT JSON"`
-	InfoFile        string   `xorm:"TEXT JSON"`
-	Md5             string   `xorm:"TEXT"`
-	Screenshots     string   `xorm:"TEXT"`
+	ID           int64   `xorm:"pk autoincr"`
+	RepoID       int64   `xorm:"index unique(s)"`
+	ReleaseID    int64   `xorm:"index not null"`
+	InfoFile     string  `xorm:"TEXT JSON"`
+	Md5          string  `xorm:"TEXT"`
+	Screenshots  string  `xorm:"TEXT"`
 }

@@ -8,10 +8,12 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"strconv"
 	"strings"
 	"encoding/json"
 
 	"code.gitea.io/gitea/models/db"
+	repo_model "code.gitea.io/gitea/models/repo"
 	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
@@ -44,8 +46,11 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 	if !hasDBInfo {
 		return nil, errors.New("No database information for add-on repository \"" + opts.Name + "\".")
 	}
-	if len(addonDBInfo.VerifiedCommits) == 0 {
-		return nil, errors.New("No verified commits available for add-on repository \"" + opts.Name + "\".")
+
+  // Get latest verified release
+	release, err := repo_model.GetReleaseForRepoByID(ctx, opts.ID, addonDBInfo.ReleaseID)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse the "info" file
@@ -74,17 +79,22 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 	// Return API add-on repository as a result
 	return &api.AddonRepository{
 		ID: fmt.Sprintf("%s_%d", opts.Name, opts.ID),
-		Versions: addonDBInfo.VerifiedCommits,
+		Version: &api.AddonRepositoryVersion{
+			Commit: release.Sha1,
+			Title: release.Title,
+			Description: release.Note,
+			CreatedAt: release.CreatedUnix.AsTime(),
+		},
 		Type: addonType,
 		Title: info.Title,
 		Description: opts.Description,
 		Author: opts.OwnerName,
 		License: info.License,
-		URL: opts.HTMLURL() + "/archive/" + addonDBInfo.VerifiedCommits[0] + ".zip",
+		URL: opts.HTMLURL() + "/archive/" + release.Sha1 + ".zip",
 		UpdateURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),
 		MD5: addonDBInfo.Md5,
 		Screenshots: &api.AddonRepositoryScreenshots{
-			BaseURL: opts.HTMLURL() + "/raw/commit/" + addonDBInfo.VerifiedCommits[0] + "/screenshots/",
+			BaseURL: opts.HTMLURL() + "/raw/commit/" + release.Sha1 + "/screenshots/",
 			Files: screenshots,
 		},
 		Dependencies: info.Dependencies,
@@ -103,7 +113,12 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (
 	var entry string
 	entry += "(supertux-addoninfo\n"
 	entry += "  (id \"" + addonRepo.ID + "\")\n"
-	entry += "  (version \"" + addonRepo.Versions[0] + "\")\n"
+	entry += "  (version\n"
+	entry += "    (commit \"" + addonRepo.Version.Commit + "\")\n"
+	entry += "    (title \"" + addonRepo.Version.Title + "\")\n"
+	entry += "    (description \"" + addonRepo.Version.Description + "\")\n"
+	entry += "    (created-at " + strconv.FormatInt(addonRepo.Version.CreatedAt.Unix(), 10) + ")\n"
+	entry += "  )\n"
 	entry += "  (type \"" + addonRepo.Type + "\")\n"
 	entry += "  (title \"" + addonRepo.Title + "\")\n"
 	entry += "  (description \"" + addonRepo.Description + "\")\n"

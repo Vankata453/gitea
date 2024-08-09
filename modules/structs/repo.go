@@ -119,7 +119,7 @@ type Repository struct {
 // AddonRepository represents a SuperTux add-on repository
 type AddonRepository struct {
 	ID           string                      `json:"id"`
-	Versions     []string                    `json:"versions"`
+	Version      *AddonRepositoryVersion     `json:"version"`
 	Type         string                      `json:"type"`
 	Title        string                      `json:"title"`
 	Description  string                      `json:"description"`
@@ -130,6 +130,14 @@ type AddonRepository struct {
 	MD5          string                      `json:"md5"`
 	Screenshots  *AddonRepositoryScreenshots `json:"screenshots"`
 	Dependencies []string                    `json:"dependencies"`
+}
+
+// AddonRepositoryVersion represents information about a SuperTux add-on version
+type AddonRepositoryVersion struct {
+	Commit      string    `json:"commit"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // AddonRepositoryScreenshots represents a collection of SuperTux add-on screenshots

@@ -38,15 +38,12 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	if err != nil {
 		return err
 	}
-	if hasDBInfo && len(addonDBInfo.VerifiedCommits) > 0 &&
-			addonDBInfo.VerifiedCommits[0] == rel.Sha1 {
+	if hasDBInfo && addonDBInfo.ReleaseID == rel.ID {
 		return nil // There is nothing to update.
 	}
 
 	// PROCEED WITH REGENERATING DATA
-
-	// Prepend the release's commit to the verified commits array.
-	addonDBInfo.VerifiedCommits = append([]string{rel.Sha1}, addonDBInfo.VerifiedCommits...)
+	addonDBInfo.ReleaseID = rel.ID
 
 	// Open the repository
 	gitRepo, err := git.OpenRepository(git.DefaultContext, repo_model.RepoPath(repo.OwnerName, repo.Name))
