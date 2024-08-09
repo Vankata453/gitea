@@ -140,20 +140,20 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 				repos[i].PrimaryLanguage = st
 				break
 			}
-			if rel, err := GetLatestReleaseByRepoID(ctx, repos[i].ID); err == nil {
-				repos[i].LatestRelease = rel;
-			}
+		}
+		if rel, err := GetLatestReleaseByRepoID(ctx, repos[i].ID); err == nil {
+			repos[i].LatestRelease = rel;
+		}
 
-			opts := &addon_service.AddonRepositoryConvertOptions{
-				ID: repos[i].ID,
-				Name: repos[i].Name,
-				OwnerName: repos[i].OwnerName,
-				Topics: repos[i].Topics,
-				Description: repos[i].Description,
-			}
-			if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
-				repos[i].AddonRepository = addon;
-			}
+		opts := &addon_service.AddonRepositoryConvertOptions{
+			ID: repos[i].ID,
+			Name: repos[i].Name,
+			OwnerName: repos[i].OwnerName,
+			Topics: repos[i].Topics,
+			Description: repos[i].Description,
+		}
+		if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
+			repos[i].AddonRepository = addon;
 		}
 	}
 

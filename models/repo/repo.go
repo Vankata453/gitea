@@ -26,6 +26,7 @@ import (
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
+	addon_service "code.gitea.io/gitea/services/addon"
 
 	"xorm.io/builder"
 )
@@ -301,7 +302,7 @@ func (repo *Repository) LoadAttributes(ctx context.Context) error {
 		return fmt.Errorf("load owner: %w", err)
 	}
 
-	// Load primary language
+	// Load primary language, latest release and add-on repository data.
 	stats := make(LanguageStatList, 0, 1)
 	if err := db.GetEngine(ctx).
 		Where("`repo_id` = ? AND `is_primary` = ? AND `language` != ?", repo.ID, true, "other").
@@ -314,6 +315,20 @@ func (repo *Repository) LoadAttributes(ctx context.Context) error {
 			repo.PrimaryLanguage = st
 			break
 		}
+	}
+	if rel, err := GetLatestReleaseByRepoID(ctx, repo.ID); err == nil {
+		repo.LatestRelease = rel;
+	}
+
+	opts := &addon_service.AddonRepositoryConvertOptions{
+		ID: repo.ID,
+		Name: repo.Name,
+		OwnerName: repo.OwnerName,
+		Topics: repo.Topics,
+		Description: repo.Description,
+	}
+	if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
+		repo.AddonRepository = addon;
 	}
 	return nil
 }
