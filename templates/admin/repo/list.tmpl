@@ -149,8 +149,8 @@
 								<td><b>{{.LatestRelease.Title}}</b></td>
 								<td><span title="{{DateTime "short" .LatestRelease.CreatedUnix}}"><time data-format="short-date" datetime="{{DateTime "short" .LatestRelease.CreatedUnix}}">{{DateTime "short" .LatestRelease.CreatedUnix}}</time></span></td>
 								<td>
-									{{if .AddonRepository}}
-										<button class="ui primary button" onclick="window.open('{{.Link}}/compare/{{index .AddonRepository.Versions 0}}...{{.LatestRelease.Sha1}}', '_blank');">{{ctx.Locale.Tr "Compare"}}</button>
+									{{if .LatestVerifiedRelease}}
+										<button class="ui primary button" onclick="window.open('{{.Link}}/compare/{{.LatestVerifiedRelease.Sha1}}...{{.LatestRelease.Sha1}}', '_blank');">{{ctx.Locale.Tr "Compare"}}</button>
 									{{else}}
 										<button class="ui primary button" disabled>{{ctx.Locale.Tr "Compare"}}</button>
 									{{end}}

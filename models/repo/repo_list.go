@@ -17,7 +17,6 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/util"
-	addon_service "code.gitea.io/gitea/services/addon"
 
 	"xorm.io/builder"
 )
@@ -125,7 +124,7 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 		repos[i].Owner = users[repos[i].OwnerID]
 	}
 
-	// Load primary language, latest release and add-on repository data.
+	// Load primary language
 	stats := make(LanguageStatList, 0, len(repos))
 	if err := db.GetEngine(ctx).
 		Where("`is_primary` = ? AND `language` != ?", true, "other").
@@ -141,19 +140,15 @@ func (repos RepositoryList) LoadAttributes(ctx context.Context) error {
 				break
 			}
 		}
+
+		// Load latest release
 		if rel, err := GetLatestReleaseByRepoID(ctx, repos[i].ID); err == nil {
 			repos[i].LatestRelease = rel;
 		}
 
-		opts := &addon_service.AddonRepositoryConvertOptions{
-			ID: repos[i].ID,
-			Name: repos[i].Name,
-			OwnerName: repos[i].OwnerName,
-			Topics: repos[i].Topics,
-			Description: repos[i].Description,
-		}
-		if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
-			repos[i].AddonRepository = addon;
+		// Load latest verified add-on release
+		if rel, err := GetLatestVerifiedReleaseByRepoID(ctx, repos[i].ID); err == nil {
+			repos[i].LatestVerifiedRelease = rel;
 		}
 	}
 

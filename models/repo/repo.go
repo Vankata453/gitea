@@ -26,7 +26,6 @@ import (
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
-	addon_service "code.gitea.io/gitea/services/addon"
 
 	"xorm.io/builder"
 )
@@ -186,7 +185,7 @@ type Repository struct {
 	Topics                          []string           `xorm:"TEXT JSON"`
 	ObjectFormatName                string             `xorm:"VARCHAR(6) NOT NULL DEFAULT 'sha1'"`
 	LatestRelease                   *Release           `xorm:"-"`
-	AddonRepository                 *api.AddonRepository `xorm:"-"`
+	LatestVerifiedRelease           *Release           `xorm:"-"`
 
 	TrustModel TrustModelType
 
@@ -302,7 +301,7 @@ func (repo *Repository) LoadAttributes(ctx context.Context) error {
 		return fmt.Errorf("load owner: %w", err)
 	}
 
-	// Load primary language, latest release and add-on repository data.
+	// Load primary language
 	stats := make(LanguageStatList, 0, 1)
 	if err := db.GetEngine(ctx).
 		Where("`repo_id` = ? AND `is_primary` = ? AND `language` != ?", repo.ID, true, "other").
@@ -316,21 +315,18 @@ func (repo *Repository) LoadAttributes(ctx context.Context) error {
 			break
 		}
 	}
+
+	// Load latest release
 	if rel, err := GetLatestReleaseByRepoID(ctx, repo.ID); err == nil {
 		repo.LatestRelease = rel;
 	}
 
-	opts := &addon_service.AddonRepositoryConvertOptions{
-		ID: repo.ID,
-		Name: repo.Name,
-		OwnerName: repo.OwnerName,
-		Topics: repo.Topics,
-		Description: repo.Description,
+	// Load latest verified add-on release
+	if rel, err := GetLatestVerifiedReleaseByRepoID(ctx, repo.ID); err == nil {
+		repo.LatestVerifiedRelease = rel;
 	}
-	if addon, err := addon_service.ToAddonRepo(ctx, opts); err == nil {
-		repo.AddonRepository = addon;
-	}
-	return nil
+
+  return nil
 }
 
 // FullName returns the repository full name

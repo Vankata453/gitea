@@ -340,6 +340,29 @@ func GetLatestReleaseByRepoID(ctx context.Context, repoID int64) (*Release, erro
 	return rel, nil
 }
 
+// GetLatestReleaseByRepoID returns the latest verified add-on release for a repository
+func GetLatestVerifiedReleaseByRepoID(ctx context.Context, repoID int64) (*Release, error) {
+	cond := builder.NewCond().
+		And(builder.Eq{"repo_id": repoID}).
+		And(builder.Eq{"is_draft": false}).
+		And(builder.Eq{"is_prerelease": false}).
+		And(builder.Eq{"is_tag": false}).
+		And(builder.Eq{"is_verified": true})
+
+	rel := new(Release)
+	has, err := db.GetEngine(ctx).
+		Desc("created_unix", "id").
+		Where(cond).
+		Get(rel)
+	if err != nil {
+		return nil, err
+	} else if !has {
+		return nil, ErrReleaseNotExist{0, "latest"}
+	}
+
+	return rel, nil
+}
+
 type releaseMetaSearch struct {
 	ID  []int64
 	Rel []*Release
