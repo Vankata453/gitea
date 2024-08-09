@@ -125,6 +125,7 @@ type AddonRepository struct {
 	Description  string                      `json:"description"`
 	Author       string                      `json:"author"`
 	License      string                      `json:"license"`
+	OriginURL    string                      `json:"origin_url"`
 	URL          string                      `json:"url"`
 	UpdateURL    string                      `json:"update_url"`
 	MD5          string                      `json:"md5"`

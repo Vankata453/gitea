@@ -90,6 +90,7 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		Description: opts.Description,
 		Author: opts.OwnerName,
 		License: info.License,
+		OriginURL: opts.HTMLURL(),
 		URL: opts.HTMLURL() + "/archive/" + release.Sha1 + ".zip",
 		UpdateURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),
 		MD5: addonDBInfo.Md5,
@@ -124,6 +125,7 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (
 	entry += "  (description \"" + addonRepo.Description + "\")\n"
 	entry += "  (author \"" + addonRepo.Author + "\")\n"
 	entry += "  (license \"" + addonRepo.License + "\")\n"
+	entry += "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
 	entry += "  (url \"" + addonRepo.URL + "\")\n"
 	entry += "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
 	entry += "  (md5 \"" + addonRepo.MD5 + "\")\n"
