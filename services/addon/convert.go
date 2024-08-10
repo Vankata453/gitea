@@ -76,6 +76,36 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		screenshots = nil
 	}
 
+	// Get api.AddonRepository information for all dependencies
+	var dependencies []*api.AddonRepository
+	for _, depID := range info.Dependencies {
+		// Add-on repository IDs may also be formatted as "{repo_name}_{repo_id}"
+		splitID := strings.Split(depID, "_")
+		repoID, err := strconv.ParseInt(splitID[len(splitID) - 1], 10, 64)
+		if err != nil {
+			continue
+		}
+
+		repo, err := repo_model.GetRepositoryByID(ctx, repoID)
+		if err != nil {
+			continue
+		}
+
+		depOpts := &AddonRepositoryConvertOptions{
+			ID: repo.ID,
+			Name: repo.Name,
+			OwnerName: repo.OwnerName,
+			Topics: repo.Topics,
+			Description: repo.Description,
+		}
+		resultEntry, err := ToAddonRepo(ctx, depOpts)
+		if err != nil {
+			continue
+		}
+
+		dependencies = append(dependencies, resultEntry)
+	}
+
 	// Return API add-on repository as a result
 	return &api.AddonRepository{
 		ID: fmt.Sprintf("%s_%d", opts.Name, opts.ID),
@@ -98,57 +128,96 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 			BaseURL: opts.HTMLURL() + "/raw/commit/" + release.Sha1 + "/screenshots/",
 			Files: screenshots,
 		},
-		Dependencies: info.Dependencies,
+		Dependencies: dependencies,
 	}, nil
 }
 
 // ToSexpAddonRepo converts a Repository to api.AddonRepository,
 // and afterwards returns the data in an S-Expression add-on index format
-func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (string, error) {
+func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions, indentCount int) (string, error) {
 	addonRepo, err := ToAddonRepo(ctx, opts)
 	if err != nil {
 		return "", err
 	}
 
+	indent := strings.Repeat(" ", indentCount)
+
 	// Write an S-Expression-formatted add-on index entry
 	var entry string
-	entry += "(supertux-addoninfo\n"
-	entry += "  (id \"" + addonRepo.ID + "\")\n"
-	entry += "  (version\n"
-	entry += "    (commit \"" + addonRepo.Version.Commit + "\")\n"
-	entry += "    (title \"" + addonRepo.Version.Title + "\")\n"
-	entry += "    (description \"" + addonRepo.Version.Description + "\")\n"
-	entry += "    (created-at " + strconv.FormatInt(addonRepo.Version.CreatedAt.Unix(), 10) + ")\n"
-	entry += "  )\n"
-	entry += "  (type \"" + addonRepo.Type + "\")\n"
-	entry += "  (title \"" + addonRepo.Title + "\")\n"
-	entry += "  (description \"" + addonRepo.Description + "\")\n"
-	entry += "  (author \"" + addonRepo.Author + "\")\n"
-	entry += "  (license \"" + addonRepo.License + "\")\n"
-	entry += "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
-	entry += "  (url \"" + addonRepo.URL + "\")\n"
-	entry += "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
-	entry += "  (md5 \"" + addonRepo.MD5 + "\")\n"
+	entry += indent + "(supertux-addoninfo\n"
+	entry += indent + "  (id \"" + addonRepo.ID + "\")\n"
+	entry += indent + "  (version\n"
+	entry += indent + "    (commit \"" + addonRepo.Version.Commit + "\")\n"
+	entry += indent + "    (title \"" + addonRepo.Version.Title + "\")\n"
+	entry += indent + "    (description \"" + addonRepo.Version.Description + "\")\n"
+	entry += indent + "    (created-at " + strconv.FormatInt(addonRepo.Version.CreatedAt.Unix(), 10) + ")\n"
+	entry += indent + "  )\n"
+	entry += indent + "  (type \"" + addonRepo.Type + "\")\n"
+	entry += indent + "  (title \"" + addonRepo.Title + "\")\n"
+	entry += indent + "  (description \"" + addonRepo.Description + "\")\n"
+	entry += indent + "  (author \"" + addonRepo.Author + "\")\n"
+	entry += indent + "  (license \"" + addonRepo.License + "\")\n"
+	entry += indent + "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
+	entry += indent + "  (url \"" + addonRepo.URL + "\")\n"
+	entry += indent + "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
+	entry += indent + "  (md5 \"" + addonRepo.MD5 + "\")\n"
 	if len(addonRepo.Screenshots.Files) > 0 { // Add-on screenshot files are available
-		entry += "  (screenshots\n"
-		entry += "    (base-url \"" + addonRepo.Screenshots.BaseURL + "\")\n"
-		entry += "    (files\n"
+		entry += indent + "  (screenshots\n"
+		entry += indent + "    (base-url \"" + addonRepo.Screenshots.BaseURL + "\")\n"
+		entry += indent + "    (files\n"
 		for _, scrFile := range addonRepo.Screenshots.Files { // Print out all screenshot files separately
-			entry += "      (file \"" + scrFile + "\")\n"
+			entry += indent + "      (file \"" + scrFile + "\")\n"
 		}
-		entry += "    )\n"
-		entry += "  )\n"
+		entry += indent + "    )\n"
+		entry += indent + "  )\n"
 	}
 	if len(addonRepo.Dependencies) > 0 { // Dependencies are specified
-		entry += "  (dependencies\n"
-		for _, depID := range addonRepo.Dependencies { // Print out all screenshot files separately
-			entry += "    (dependency \"" + depID + "\")\n"
+		entry += indent + "  (dependencies\n"
+		for _, dependency := range addonRepo.Dependencies { // Print out all screenshot files separately
+			entry += ToSexpAddonDependencyRepo(dependency, indentCount + 4) + "\n"
 		}
-		entry += "  )\n"
+		entry += indent + "  )\n"
 	}
-	entry += ")"
+	entry += indent + ")"
 
 	return entry, nil
+}
+
+// ToSexpAddonDependencyRepo converts a Repository to api.AddonRepository,
+// and afterwards returns the data in an S-Expression add-on index format.
+// NOTE: Only data required for dependency repositories is provided.
+func ToSexpAddonDependencyRepo(addonRepo *api.AddonRepository, indentCount int) string {
+	indent := strings.Repeat(" ", indentCount)
+
+	// Write an S-Expression-formatted add-on index dependency entry
+	var entry string
+	entry += indent + "(dependency\n"
+	entry += indent + "  (id \"" + addonRepo.ID + "\")\n"
+	entry += indent + "  (version\n"
+	entry += indent + "    (commit \"" + addonRepo.Version.Commit + "\")\n"
+	entry += indent + "    (title \"" + addonRepo.Version.Title + "\")\n"
+	entry += indent + "    (description \"" + addonRepo.Version.Description + "\")\n"
+	entry += indent + "    (created-at " + strconv.FormatInt(addonRepo.Version.CreatedAt.Unix(), 10) + ")\n"
+	entry += indent + "  )\n"
+	entry += indent + "  (type \"" + addonRepo.Type + "\")\n"
+	entry += indent + "  (title \"" + addonRepo.Title + "\")\n"
+	entry += indent + "  (description \"" + addonRepo.Description + "\")\n"
+	entry += indent + "  (author \"" + addonRepo.Author + "\")\n"
+	entry += indent + "  (license \"" + addonRepo.License + "\")\n"
+	entry += indent + "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
+	entry += indent + "  (url \"" + addonRepo.URL + "\")\n"
+	entry += indent + "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
+	entry += indent + "  (md5 \"" + addonRepo.MD5 + "\")\n"
+	if len(addonRepo.Dependencies) > 0 { // Dependencies are specified
+		entry += indent + "  (dependencies\n"
+		for _, dependency := range addonRepo.Dependencies { // Print out all screenshot files separately
+			entry += ToSexpAddonDependencyRepo(dependency, indentCount + 4) + "\n"
+		}
+		entry += indent + "  )\n"
+	}
+	entry += indent + ")"
+
+	return entry
 }
 
 // ToSexpAddonIndex combines multiple S-Expression-formatted add-on index entries.
@@ -159,12 +228,12 @@ func ToSexpAddonIndex(entries []string, previousPageURL string, nextPageURL stri
 		index += entry + "\n"
 	}
 	if previousPageURL != "" {
-		index += "(previous-page \"" + previousPageURL + "\")\n"
+		index += "  (previous-page \"" + previousPageURL + "\")\n"
 	}
 	if nextPageURL != "" {
-		index += "(next-page \"" + nextPageURL + "\")\n"
+		index += "  (next-page \"" + nextPageURL + "\")\n"
 	}
-	index += "(total-pages " + strconv.Itoa(totalPages) + ")\n"
+	index += "  (total-pages " + strconv.Itoa(totalPages) + ")\n"
 	index += ")"
 
 	return index

@@ -434,7 +434,7 @@ func SearchAddons(ctx *context.APIContext) {
 			Topics: repo.Topics,
 			Description: repo.Description,
 		}
-		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts)
+		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts, 2)
 		if err != nil {
 			log.Warn("Loading an add-on repository in API failed: %v", err.Error())
 		}
@@ -521,7 +521,7 @@ func SearchAddon(ctx *context.APIContext) {
 		Topics: repo.Topics,
 		Description: repo.Description,
 	}
-	resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts)
+	resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts, 0)
 	if err != nil {
 		log.Warn("Loading an add-on repository in API failed: %v", err.Error())
 	}

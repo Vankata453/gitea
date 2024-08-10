@@ -130,7 +130,7 @@ type AddonRepository struct {
 	UpdateURL    string                      `json:"update_url"`
 	MD5          string                      `json:"md5"`
 	Screenshots  *AddonRepositoryScreenshots `json:"screenshots"`
-	Dependencies []string                    `json:"dependencies"`
+	Dependencies []*AddonRepository          `json:"dependencies"`
 }
 
 // AddonRepositoryVersion represents information about a SuperTux add-on version
