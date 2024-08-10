@@ -449,6 +449,7 @@ func SearchAddons(ctx *context.APIContext) {
 		results,
 		ctx.GenPreviousPageLink(totalCount, opts.PageSize),
 		ctx.GenNextPageLink(totalCount, opts.PageSize),
+		ctx.GetTotalPages(totalCount, opts.PageSize),
 	))
 }
 

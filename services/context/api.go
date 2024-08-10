@@ -232,6 +232,12 @@ func (ctx *APIContext) GenNextPageLink(total, pageSize int) string {
 	return setting.AppURL + u.RequestURI()[1:]
 }
 
+// GetTotalPages returns the count of all pages.
+func (ctx *APIContext) GetTotalPages(total, pageSize int) int {
+	page := NewPagination(total, pageSize, ctx.FormInt("page"), 0)
+	return page.Paginater.TotalPages()
+}
+
 // SetLinkHeader sets pagination link header by given total number and page size.
 func (ctx *APIContext) SetLinkHeader(total, pageSize int) {
 	links := genAPILinks(ctx.Req.URL, total, pageSize, ctx.FormInt("page"))
