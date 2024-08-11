@@ -127,7 +127,7 @@ type AddonRepository struct {
 	License      string                      `json:"license"`
 	OriginURL    string                      `json:"origin_url"`
 	URL          string                      `json:"url"`
-	UpdateURL    string                      `json:"update_url"`
+	UpstreamURL  string                      `json:"upstream_url"`
 	MD5          string                      `json:"md5"`
 	Screenshots  *AddonRepositoryScreenshots `json:"screenshots"`
 	Dependencies []*AddonRepository          `json:"dependencies"`

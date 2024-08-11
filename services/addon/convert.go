@@ -122,7 +122,7 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		License: info.License,
 		OriginURL: opts.HTMLURL(),
 		URL: opts.HTMLURL() + "/archive/" + release.Sha1 + ".zip",
-		UpdateURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),
+		UpstreamURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),
 		MD5: addonDBInfo.Md5,
 		Screenshots: &api.AddonRepositoryScreenshots{
 			BaseURL: opts.HTMLURL() + "/raw/commit/" + release.Sha1 + "/screenshots/",
@@ -159,7 +159,7 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions, i
 	entry += indent + "  (license \"" + addonRepo.License + "\")\n"
 	entry += indent + "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
 	entry += indent + "  (url \"" + addonRepo.URL + "\")\n"
-	entry += indent + "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
+	entry += indent + "  (upstream-url \"" + addonRepo.UpstreamURL + "\")\n"
 	entry += indent + "  (md5 \"" + addonRepo.MD5 + "\")\n"
 	if len(addonRepo.Screenshots.Files) > 0 { // Add-on screenshot files are available
 		entry += indent + "  (screenshots\n"
@@ -206,7 +206,7 @@ func ToSexpAddonDependencyRepo(addonRepo *api.AddonRepository, indentCount int) 
 	entry += indent + "  (license \"" + addonRepo.License + "\")\n"
 	entry += indent + "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
 	entry += indent + "  (url \"" + addonRepo.URL + "\")\n"
-	entry += indent + "  (update-url \"" + addonRepo.UpdateURL + "\")\n"
+	entry += indent + "  (upstream-url \"" + addonRepo.UpstreamURL + "\")\n"
 	entry += indent + "  (md5 \"" + addonRepo.MD5 + "\")\n"
 	if len(addonRepo.Dependencies) > 0 { // Dependencies are specified
 		entry += indent + "  (dependencies\n"
