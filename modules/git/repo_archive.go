@@ -63,6 +63,9 @@ func (repo *Repository) CreateArchive(ctx context.Context, format ArchiveType, t
 	cmd.AddOptionFormat("--format=%s", format.String())
 	cmd.AddDynamicArguments(commitID)
 
+	// Exclude the "info" file and all "screenshots" from add-on repository archives.
+	cmd.AddDashesAndList(":!info", ":!screenshots/*")
+
 	// Avoid LFS hooks getting installed because of /etc/gitconfig, which can break pull requests.
 	env := append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1")
 
