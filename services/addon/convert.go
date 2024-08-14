@@ -140,11 +140,16 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions, i
 		return "", err
 	}
 
+	return GetSexpAddonRepo(addonRepo, "supertux-addoninfo", indentCount), nil
+}
+
+// GetSexpAddonRepo returns the data of an api.AddonRepository in an S-Expression add-on index format.
+func GetSexpAddonRepo(addonRepo *api.AddonRepository, headerName string, indentCount int) string {
 	indent := strings.Repeat(" ", indentCount)
 
 	// Write an S-Expression-formatted add-on index entry
 	var entry string
-	entry += indent + "(supertux-addoninfo\n"
+	entry += indent + "(" + headerName + "\n"
 	entry += indent + "  (id \"" + addonRepo.ID + "\")\n"
 	entry += indent + "  (version\n"
 	entry += indent + "    (commit \"" + addonRepo.Version.Commit + "\")\n"
@@ -173,45 +178,8 @@ func ToSexpAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions, i
 	}
 	if len(addonRepo.Dependencies) > 0 { // Dependencies are specified
 		entry += indent + "  (dependencies\n"
-		for _, dependency := range addonRepo.Dependencies { // Print out all screenshot files separately
-			entry += ToSexpAddonDependencyRepo(dependency, indentCount + 4) + "\n"
-		}
-		entry += indent + "  )\n"
-	}
-	entry += indent + ")"
-
-	return entry, nil
-}
-
-// ToSexpAddonDependencyRepo converts a Repository to api.AddonRepository,
-// and afterwards returns the data in an S-Expression add-on index format.
-// NOTE: Only data required for dependency repositories is provided.
-func ToSexpAddonDependencyRepo(addonRepo *api.AddonRepository, indentCount int) string {
-	indent := strings.Repeat(" ", indentCount)
-
-	// Write an S-Expression-formatted add-on index dependency entry
-	var entry string
-	entry += indent + "(dependency\n"
-	entry += indent + "  (id \"" + addonRepo.ID + "\")\n"
-	entry += indent + "  (version\n"
-	entry += indent + "    (commit \"" + addonRepo.Version.Commit + "\")\n"
-	entry += indent + "    (title \"" + addonRepo.Version.Title + "\")\n"
-	entry += indent + "    (description \"" + addonRepo.Version.Description + "\")\n"
-	entry += indent + "    (created-at " + strconv.FormatInt(addonRepo.Version.CreatedAt.Unix(), 10) + ")\n"
-	entry += indent + "  )\n"
-	entry += indent + "  (type \"" + addonRepo.Type + "\")\n"
-	entry += indent + "  (title \"" + addonRepo.Title + "\")\n"
-	entry += indent + "  (description \"" + addonRepo.Description + "\")\n"
-	entry += indent + "  (author \"" + addonRepo.Author + "\")\n"
-	entry += indent + "  (license \"" + addonRepo.License + "\")\n"
-	entry += indent + "  (origin-url \"" + addonRepo.OriginURL + "\")\n"
-	entry += indent + "  (url \"" + addonRepo.URL + "\")\n"
-	entry += indent + "  (upstream-url \"" + addonRepo.UpstreamURL + "\")\n"
-	entry += indent + "  (md5 \"" + addonRepo.MD5 + "\")\n"
-	if len(addonRepo.Dependencies) > 0 { // Dependencies are specified
-		entry += indent + "  (dependencies\n"
-		for _, dependency := range addonRepo.Dependencies { // Print out all screenshot files separately
-			entry += ToSexpAddonDependencyRepo(dependency, indentCount + 4) + "\n"
+		for _, dependency := range addonRepo.Dependencies { // Print out all dependencies separately
+			entry += GetSexpAddonRepo(dependency, "dependency", indentCount + 4) + "\n"
 		}
 		entry += indent + "  )\n"
 	}
