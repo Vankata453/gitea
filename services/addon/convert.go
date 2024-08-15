@@ -60,14 +60,11 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		return nil, err_
 	}
 
-	// Get type from topics, if available
+	// Get type from "info" file
 	var addonType = "worldmap" // Default type
-	for _, topic := range opts.Topics {
-		if topic == "world" || topic == "levelset" ||
-				topic == "languagepack" || topic == "resourcepack" || topic == "addon" {
-			addonType = topic
-			break
-		}
+	if info.Type == "worldmap" || info.Type == "world" || info.Type == "levelset" ||
+			info.Type == "languagepack" || info.Type == "resourcepack" || info.Type == "addon" {
+		addonType = info.Type
 	}
 
 	// List all screenshots

@@ -150,6 +150,7 @@ type AddonRepositoryScreenshots struct {
 // AddonRepositoryInfo represents the contents of a SuperTux add-on repository info file
 type AddonRepositoryInfo struct { 
 	Title        string   `json:"title"`
+	Type         string   `json:"type"`
 	License      string   `json:"license"`
 	Dependencies []string `json:"dependencies"`
 }
