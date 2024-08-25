@@ -405,18 +405,11 @@ func SearchAddons(ctx *context.APIContext) {
 	results := make([]string, len(repos))
 	for i, repo := range repos {
 		if err = repo.LoadOwner(ctx); err != nil {
-			ctx.JSON(http.StatusInternalServerError, api.SearchError{
-				OK:    false,
-				Error: err.Error(),
-			})
-			return
+			continue
 		}
 		permission, err := access_model.GetUserRepoPermission(ctx, repo, ctx.Doer)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, api.SearchError{
-				OK:    false,
-				Error: err.Error(),
-			})
+			continue
 		}
 		if !permission.HasUnits() && permission.AccessMode > perm.AccessModeNone {
 			// If units is empty, it means that it's a hard-coded permission, like access_model.Permission{AccessMode: perm.AccessModeAdmin}
@@ -437,6 +430,7 @@ func SearchAddons(ctx *context.APIContext) {
 		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts, 2)
 		if err != nil {
 			log.Warn("Loading an add-on repository in API failed: %v", err.Error())
+			continue
 		}
 		results[i] = resultEntry
 	}
