@@ -54,7 +54,7 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	defer gitRepo.Close()
 
 	// Make sure an archive of the latest commit is created, if data not available in the database
-	archiveRequest, err := archiver_service.NewRequest(repo.ID, gitRepo, rel.Sha1 + ".zip", git.ZIP)
+	archiveRequest, err := archiver_service.NewRequest(repo.ID, gitRepo, rel.Sha1, git.ZIP)
 	if err != nil {
 		return err
 	}
