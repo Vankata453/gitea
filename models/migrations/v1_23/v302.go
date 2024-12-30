@@ -1,14 +1,18 @@
-// Copyright 2023-2024 Vankata453
+// Copyright 2024 The Gitea Authors. All rights reserved.
 // SPDX-License-Identifier: MIT
 
 package v1_23 //nolint
 
 import (
-	"xorm.io/xorm"
+	"code.gitea.io/gitea/modules/timeutil"
 
-	addon_repo_model "code.gitea.io/gitea/models/repo_addon"
+	"xorm.io/xorm"
 )
 
-func AddAddonRepositoryTable(x *xorm.Engine) error {
-	return x.Sync2(new(addon_repo_model.AddonRepository))
+func AddIndexToActionTaskStoppedLogExpired(x *xorm.Engine) error {
+	type ActionTask struct {
+		Stopped    timeutil.TimeStamp `xorm:"index(stopped_log_expired)"`
+		LogExpired bool               `xorm:"index(stopped_log_expired)"`
+	}
+	return x.Sync(new(ActionTask))
 }

@@ -50,19 +50,19 @@
 							</a>
 						</div>
 					</div>
-					{{$description := .DescriptionHTML $.Context}}
-					{{if $description}}
-						<div class="flex-item-body">{{$description}}</div>
-					{{end}}
-					{{if .Topics}}
-						<div class="label-list">
-						{{range .Topics}}
-							{{if ne . ""}}<a class="ui label" href="{{AppSubUrl}}/explore/repos?q={{.}}&topic=1">{{.}}</a>{{end}}
-						{{end}}
-						</div>
-					{{end}}
-					<div class="flex-item-body">{{ctx.Locale.Tr "org.repo_updated"}} {{TimeSinceUnix .UpdatedUnix ctx.Locale}}</div>
 				</div>
+				{{$description := .DescriptionHTML ctx}}
+				{{if $description}}
+					<div class="flex-item-body">{{$description}}</div>
+				{{end}}
+				{{if .Topics}}
+					<div class="label-list">
+					{{range .Topics}}
+						{{if ne . ""}}<a class="ui label" href="{{AppSubUrl}}/explore/repos?q={{.}}&topic=1">{{.}}</a>{{end}}
+					{{end}}
+					</div>
+				{{end}}
+				<div class="flex-item-body">{{ctx.Locale.Tr "org.repo_updated"}} {{DateUtils.TimeSince .UpdatedUnix}}</div>
 			</div>
 		{{end}}
 	{{else}}

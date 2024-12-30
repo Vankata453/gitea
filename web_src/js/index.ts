@@ -2,8 +2,6 @@
 import './bootstrap.ts';
 import './htmx.ts';
 
-import {initRepoActivityTopAuthorsChart} from './components/RepoActivityTopAuthors.vue';
-import {initScopedAccessTokenCategories} from './components/ScopedAccessTokenSelector.vue';
 import {initDashboardRepoList} from './components/DashboardRepoList.vue';
 
 import {initGlobalCopyToClipboardListener} from './features/clipboard.ts';
@@ -25,31 +23,23 @@ import {initFindFileInRepo} from './features/repo-findfile.ts';
 import {initCommentContent, initMarkupContent} from './markup/content.ts';
 import {initPdfViewer} from './render/pdf.ts';
 
-import {initUserAuthOauth2} from './features/user-auth.ts';
+import {initUserAuthOauth2, initUserCheckAppUrl} from './features/user-auth.ts';
 import {
-  initRepoIssueDue,
   initRepoIssueReferenceRepositorySearch,
-  initRepoIssueTimeTracking,
   initRepoIssueWipTitle,
   initRepoPullRequestMergeInstruction,
   initRepoPullRequestAllowMaintainerEdit,
-  initRepoPullRequestReview, initRepoIssueSidebarList, initArchivedLabelHandler,
+  initRepoPullRequestReview, initRepoIssueSidebarList, initRepoIssueFilterItemLabel,
 } from './features/repo-issue.ts';
 import {initRepoEllipsisButton, initCommitStatuses} from './features/repo-commit.ts';
 import {initRepoTopicBar} from './features/repo-home.ts';
-import {initAdminEmails} from './features/admin/emails.ts';
 import {initAdminCommon} from './features/admin/common.ts';
 import {initRepoTemplateSearch} from './features/repo-template.ts';
 import {initRepoCodeView} from './features/repo-code.ts';
 import {initSshKeyFormParser} from './features/sshkey-helper.ts';
 import {initUserSettings} from './features/user-settings.ts';
-import {initRepoArchiveLinks} from './features/repo-common.ts';
+import {initRepoActivityTopAuthorsChart, initRepoArchiveLinks} from './features/repo-common.ts';
 import {initRepoMigrationStatusChecker} from './features/repo-migrate.ts';
-import {
-  initRepoSettingGitHook,
-  initRepoSettingsCollaboration,
-  initRepoSettingSearchTeamBox,
-} from './features/repo-settings.ts';
 import {initRepoDiffView} from './features/repo-diff.ts';
 import {initOrgTeamSearchRepoBox, initOrgTeamSettings} from './features/org-team.ts';
 import {initUserAuthWebAuthn, initUserAuthWebAuthnRegister} from './features/user-auth-webauthn.ts';
@@ -61,7 +51,7 @@ import {initCompWebHookEditor} from './features/comp/WebHookEditor.ts';
 import {initRepoBranchButton} from './features/repo-branch.ts';
 import {initCommonOrganization} from './features/common-organization.ts';
 import {initRepoWikiForm} from './features/repo-wiki.ts';
-import {initRepoCommentForm, initRepository} from './features/repo-legacy.ts';
+import {initRepository, initBranchSelectorTabs} from './features/repo-legacy.ts';
 import {initCopyContent} from './features/copycontent.ts';
 import {initCaptcha} from './features/captcha.ts';
 import {initRepositoryActionView} from './components/RepoActionView.vue';
@@ -80,6 +70,7 @@ import {initColorPickers} from './features/colorpicker.ts';
 import {initAdminSelfCheck} from './features/admin/selfcheck.ts';
 import {initOAuth2SettingsDisableCheckbox} from './features/oauth2-settings.ts';
 import {initGlobalFetchAction} from './features/common-fetch-action.ts';
+import {initScopedAccessTokenCategories} from './features/scoped-access-token.ts';
 import {
   initFootLanguageMenu,
   initGlobalDropdown,
@@ -90,20 +81,23 @@ import {
   initGlobalButtonClickOnEnter,
   initGlobalButtons,
   initGlobalDeleteButton,
-  initGlobalShowModal,
 } from './features/common-button.ts';
-import {initGlobalEnterQuickSubmit, initGlobalFormDirtyLeaveConfirm} from './features/common-form.ts';
+import {
+  initGlobalComboMarkdownEditor,
+  initGlobalEnterQuickSubmit,
+  initGlobalFormDirtyLeaveConfirm,
+} from './features/common-form.ts';
 
 initGiteaFomantic();
 initDirAuto();
 initSubmitEventPolyfill();
 
-function callInitFunctions(functions) {
+function callInitFunctions(functions: (() => any)[]) {
   // Start performance trace by accessing a URL by "https://localhost/?_ui_performance_trace=1" or "https://localhost/?key=value&_ui_performance_trace=1"
   // It is a quick check, no side effect so no need to do slow URL parsing.
   const initStart = performance.now();
   if (window.location.search.includes('_ui_performance_trace=1')) {
-    let results = [];
+    let results: {name: string, dur: number}[] = [];
     for (const func of functions) {
       const start = performance.now();
       func();
@@ -129,7 +123,6 @@ onDomReady(() => {
   callInitFunctions([
     initGlobalDropdown,
     initGlobalTabularMenu,
-    initGlobalShowModal,
     initGlobalFetchAction,
     initGlobalTooltips,
     initGlobalButtonClickOnEnter,
@@ -137,6 +130,7 @@ onDomReady(() => {
     initGlobalCopyToClipboardListener,
     initGlobalEnterQuickSubmit,
     initGlobalFormDirtyLeaveConfirm,
+    initGlobalComboMarkdownEditor,
     initGlobalDeleteButton,
 
     initCommonOrganization,
@@ -164,7 +158,6 @@ onDomReady(() => {
     initCopyContent,
 
     initAdminCommon,
-    initAdminEmails,
     initAdminUserListSearchForm,
     initAdminConfigs,
     initAdminSelfCheck,
@@ -181,18 +174,16 @@ onDomReady(() => {
     initRepoArchiveLinks,
     initRepoBranchButton,
     initRepoCodeView,
-    initRepoCommentForm,
+    initBranchSelectorTabs,
     initRepoEllipsisButton,
     initRepoDiffCommitBranchesAndTags,
     initRepoEditor,
     initRepoGraphGit,
     initRepoIssueContentHistory,
-    initRepoIssueDue,
     initRepoIssueList,
+    initRepoIssueFilterItemLabel,
     initRepoIssueSidebarList,
-    initArchivedLabelHandler,
     initRepoIssueReferenceRepositorySearch,
-    initRepoIssueTimeTracking,
     initRepoIssueWipTitle,
     initRepoMigration,
     initRepoMigrationStatusChecker,
@@ -202,9 +193,6 @@ onDomReady(() => {
     initRepoPullRequestReview,
     initRepoRelease,
     initRepoReleaseNew,
-    initRepoSettingGitHook,
-    initRepoSettingSearchTeamBox,
-    initRepoSettingsCollaboration,
     initRepoTemplateSearch,
     initRepoTopicBar,
     initRepoWikiForm,
@@ -218,6 +206,7 @@ onDomReady(() => {
     initCommitStatuses,
     initCaptcha,
 
+    initUserCheckAppUrl,
     initUserAuthOauth2,
     initUserAuthWebAuthn,
     initUserAuthWebAuthnRegister,

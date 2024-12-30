@@ -6,21 +6,20 @@ package explore
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"code.gitea.io/gitea/models/db"
 	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/sitemap"
+	"code.gitea.io/gitea/modules/templates"
 	"code.gitea.io/gitea/services/context"
 )
 
 const (
 	// tplExploreRepos explore repositories page template
-	tplExploreRepos        base.TplName = "explore/repos"
-	relevantReposOnlyParam string       = "only_show_relevant"
+	tplExploreRepos        templates.TplName = "explore/repos"
+	relevantReposOnlyParam string            = "only_show_relevant"
 )
 
 // RepoSearchOptions when calling search repositories
@@ -30,7 +29,7 @@ type RepoSearchOptions struct {
 	Restricted       bool
 	PageSize         int
 	OnlyShowRelevant bool
-	TplName          base.TplName
+	TplName          templates.TplName
 }
 
 // RenderRepoSearch render repositories search page
@@ -58,7 +57,7 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 		orderBy db.SearchOrderBy
 	)
 
-	sortOrder := strings.ToLower(ctx.FormString("sort"))
+	sortOrder := ctx.FormString("sort")
 	if sortOrder == "" {
 		sortOrder = setting.UI.ExploreDefaultSort
 	}
@@ -144,6 +143,21 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 	pager.AddParamString("topic", fmt.Sprint(topicOnly))
 	pager.AddParamString("language", language)
 	pager.AddParamString(relevantReposOnlyParam, fmt.Sprint(opts.OnlyShowRelevant))
+	if archived.Has() {
+		pager.AddParamString("archived", fmt.Sprint(archived.Value()))
+	}
+	if fork.Has() {
+		pager.AddParamString("fork", fmt.Sprint(fork.Value()))
+	}
+	if mirror.Has() {
+		pager.AddParamString("mirror", fmt.Sprint(mirror.Value()))
+	}
+	if template.Has() {
+		pager.AddParamString("template", fmt.Sprint(template.Value()))
+	}
+	if private.Has() {
+		pager.AddParamString("private", fmt.Sprint(private.Value()))
+	}
 	ctx.Data["Page"] = pager
 
 	ctx.HTML(http.StatusOK, opts.TplName)
@@ -151,7 +165,9 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 
 // Repos render explore repositories page
 func Repos(ctx *context.Context) {
-	ctx.Data["UsersIsDisabled"] = setting.Service.Explore.DisableUsersPage
+	ctx.Data["UsersPageIsDisabled"] = setting.Service.Explore.DisableUsersPage
+	ctx.Data["OrganizationsPageIsDisabled"] = setting.Service.Explore.DisableOrganizationsPage
+	ctx.Data["CodePageIsDisabled"] = setting.Service.Explore.DisableCodePage
 	ctx.Data["Title"] = ctx.Tr("explore")
 	ctx.Data["PageIsExplore"] = true
 	ctx.Data["PageIsExploreRepositories"] = true
