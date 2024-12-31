@@ -17,6 +17,7 @@ import (
 	"code.gitea.io/gitea/routers/api/v1/utils"
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/convert"
+	files_service "code.gitea.io/gitea/services/repository/files"
 	release_service "code.gitea.io/gitea/services/release"
 )
 
@@ -233,6 +234,14 @@ func CreateRelease(ctx *context.APIContext) {
 		if len(form.Target) == 0 {
 			form.Target = ctx.Repo.Repository.DefaultBranch
 		}
+
+		// Make sure an "info" file exists in the branch
+		_, err := files_service.GetContents(ctx, ctx.Repo.Repository, "info", form.Target, false)
+		if err != nil {
+			ctx.Error(http.StatusUnprocessableEntity, "GetContents", "The repository at the given branch does not contain an 'info' file! Please check out the site documentation for more info.")
+			return
+		}
+
 		rel = &repo_model.Release{
 			RepoID:       ctx.Repo.Repository.ID,
 			PublisherID:  ctx.Doer.ID,

@@ -29,6 +29,7 @@ import (
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/context/upload"
 	"code.gitea.io/gitea/services/forms"
+	files_service "code.gitea.io/gitea/services/repository/files"
 	release_service "code.gitea.io/gitea/services/release"
 )
 
@@ -457,6 +458,13 @@ func NewReleasePost(ctx *context.Context) {
 
 			ctx.Flash.Success(ctx.Tr("repo.tag.create_success", form.TagName))
 			ctx.Redirect(ctx.Repo.RepoLink + "/src/tag/" + util.PathEscapeSegments(form.TagName))
+			return
+		}
+
+		// Make sure an "info" file exists in the branch
+		_, err := files_service.GetContents(ctx, ctx.Repo.Repository, "info", form.Target, false)
+		if err != nil {
+			ctx.RenderWithErr(ctx.Tr("The repository at the given branch does not contain an 'info' file! Please check out the site documentation for more info."), tplReleaseNew, &form)
 			return
 		}
 

@@ -86,6 +86,9 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 	if err != nil {
 		return err
 	}
+	if fileResponse.Content == nil {
+		return errors.New("Repository has no 'info' file!");
+	}
 	infoContent, err := base64.StdEncoding.DecodeString(*fileResponse.Content.Content)
 	if err != nil {
 		return err
