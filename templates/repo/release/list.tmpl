@@ -38,12 +38,12 @@
 									<span class="ui purple label">{{ctx.Locale.Tr (printf "Verified on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
 								{{else if $release.IsRejected}}
 									<span class="ui red label" data-tooltip-content="{{$release.RejectionReason}}" data-tooltip-interactive="true">{{ctx.Locale.Tr (printf "Rejected on %s" (DateTime "short" $release.ReviewedUnix))}}</span>
-								{{else if eq $idx 0}}
+								{{else if and (eq $idx 0) (not (or .Release.IsDraft .Release.IsPrerelease))}}
 									<span class="ui yellow label">{{ctx.Locale.Tr "Pending"}}</span>
 								{{end}}
 							</h4>
 							<div>
-								{{if and $.CanCreateRelease (not $.PageIsSingleTag)}}
+								{{if and (or (eq $idx 0) .Release.IsDraft .Release.IsPrerelease) (not .Release.IsVerified) (not .Release.IsRejected) $.CanCreateRelease (not $.PageIsSingleTag)}}
 									<a class="muted" data-tooltip-content="{{ctx.Locale.Tr "repo.release.edit"}}" href="{{$.RepoLink}}/releases/edit/{{$release.TagName | PathEscapeSegments}}" rel="nofollow">
 										{{svg "octicon-pencil"}}
 									</a>

@@ -339,6 +339,22 @@ func EditRelease(ctx *context.APIContext) {
 		return
 	}
 
+	if !rel.IsDraft && !rel.IsPrerelease {
+		latestRel, err := repo_model.GetLatestReleaseByRepoID(ctx, ctx.Repo.Repository.ID)
+		if err != nil {
+			ctx.Error(http.StatusInternalServerError, "GetLatestReleaseByRepoID", err)
+			return
+		}
+		if rel.ID != latestRel.ID {
+			ctx.Error(http.StatusUnprocessableEntity, "LatestRelease", "Only the latest release of a repository can be edited!")
+			return
+		}
+		if rel.IsVerified || rel.IsRejected {
+			ctx.Error(http.StatusUnprocessableEntity, "IsVerified || IsRejected", "Cannot edit a reviewed release!")
+			return
+		}
+	}
+
 	if len(form.TagName) > 0 {
 		rel.TagName = form.TagName
 	}

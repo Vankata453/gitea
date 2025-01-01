@@ -587,6 +587,23 @@ func EditReleasePost(ctx *context.Context) {
 		ctx.NotFound("GetRelease", err)
 		return
 	}
+
+	if !rel.IsDraft && !rel.IsPrerelease {
+		latestRel, err := repo_model.GetLatestReleaseByRepoID(ctx, ctx.Repo.Repository.ID)
+		if err != nil {
+			ctx.ServerError("GetLatestReleaseByRepoID", err)
+			return
+		}
+		if rel.ID != latestRel.ID {
+			ctx.RenderWithErr(ctx.Tr("Only the latest release of a repository can be edited!"), tplReleaseNew, &form)
+			return
+		}
+		if rel.IsVerified || rel.IsRejected {
+			ctx.RenderWithErr(ctx.Tr("Cannot edit a reviewed release!"), tplReleaseNew, &form)
+			return
+		}
+	}
+
 	ctx.Data["tag_name"] = rel.TagName
 	ctx.Data["tag_target"] = rel.Target
 	ctx.Data["title"] = rel.Title
