@@ -189,7 +189,7 @@ func VerifyAddonRelease(ctx *context.Context) {
 	log.Trace("Add-on repository '%s': Release with tag '%s' verified (commit '%s').", repo.FullName(), rel.TagName, rel.Sha1)
 
 	ctx.Flash.Success(ctx.Tr("Release successfully verified!"))
-	ctx.JSONRedirect(setting.AppSubURL + "/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
+	ctx.JSONRedirect(setting.AppSubURL + "/-/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
 }
 
 // DeleteAddonRelease delete the latest release of an add-on repository
@@ -217,5 +217,5 @@ func RejectAddonRelease(ctx *context.Context) {
 	log.Trace("Add-on repository '%s': Release with tag '%s' rejected (commit '%s').", repo.FullName(), rel.TagName, rel.Sha1)
 
 	ctx.Flash.Success(ctx.Tr("Release successfully rejected!"))
-	ctx.JSONRedirect(setting.AppSubURL + "/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
+	ctx.JSONRedirect(setting.AppSubURL + "/-/admin/repos?page=" + url.QueryEscape(ctx.FormString("page")) + "&sort=" + url.QueryEscape(ctx.FormString("sort")))
 }
