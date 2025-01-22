@@ -428,8 +428,6 @@ func SearchAddons(ctx *context.APIContext) {
 			ID: repo.ID,
 			Name: repo.Name,
 			OwnerName: repo.OwnerName,
-			Topics: repo.Topics,
-			Description: repo.Description,
 		}
 		resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts, 2)
 		if err != nil {
@@ -516,8 +514,6 @@ func SearchAddon(ctx *context.APIContext) {
 		ID: repo.ID,
 		Name: repo.Name,
 		OwnerName: repo.OwnerName,
-		Topics: repo.Topics,
-		Description: repo.Description,
 	}
 	resultEntry, err := addon_service.ToSexpAddonRepo(ctx, opts, 0)
 	if err != nil {

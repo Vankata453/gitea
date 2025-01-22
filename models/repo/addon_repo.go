@@ -4,8 +4,29 @@
 package repo
 
 import (
+	"strings"
+
 	"xorm.io/builder"
 )
+
+const (
+	ADDON_TYPE_WORLDMAP         string = "worldmap"
+	ADDON_TYPE_WORLD            string = "world"
+	ADDON_TYPE_LEVELSET         string = "levelset"
+	ADDON_TYPE_LANGUAGEPACK     string = "languagepack"
+	ADDON_TYPE_RESOURCEPACK     string = "resourcepack"
+	ADDON_TYPE_WEAKRESOURCEPACK string = "weakresourcepack"
+)
+
+func IsValidAddonType(t string) bool {
+	tl := strings.ToLower(t)
+	return tl == ADDON_TYPE_WORLDMAP ||
+		tl == ADDON_TYPE_WORLD ||
+		tl == ADDON_TYPE_LEVELSET ||
+		tl == ADDON_TYPE_LANGUAGEPACK ||
+		tl == ADDON_TYPE_RESOURCEPACK ||
+		tl == ADDON_TYPE_WEAKRESOURCEPACK;
+}
 
 // Filter out only non-empty regular public repositories, which are not by the "supertux" organization.
 func IsAddonRepository(repo *Repository) bool {

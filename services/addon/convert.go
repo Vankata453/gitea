@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"encoding/json"
 
 	"code.gitea.io/gitea/models/db"
 	repo_model "code.gitea.io/gitea/models/repo"
@@ -24,8 +23,6 @@ type AddonRepositoryConvertOptions struct {
 	ID          int64
 	Name        string
 	OwnerName   string
-	Topics      []string
-	Description string
 }
 
 // HTMLURL returns the repository HTML URL
@@ -47,24 +44,10 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		return nil, errors.New("No database information for add-on repository \"" + opts.Name + "\".")
 	}
 
-  // Get latest verified release
+	// Get latest verified release
 	release, err := repo_model.GetReleaseForRepoByID(ctx, opts.ID, addonDBInfo.ReleaseID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Parse the "info" file
-	var info api.AddonRepositoryInfo
-	err_ := json.Unmarshal([]byte(addonDBInfo.InfoFile), &info)
-	if err_ != nil {
-		return nil, err_
-	}
-
-	// Get type from "info" file
-	var addonType = "worldmap" // Default type
-	if info.Type == "worldmap" || info.Type == "world" || info.Type == "levelset" ||
-			info.Type == "languagepack" || info.Type == "resourcepack" || info.Type == "addon" {
-		addonType = info.Type
 	}
 
 	// List all screenshots
@@ -73,9 +56,15 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 		screenshots = nil
 	}
 
+	// List all dependency IDs
+	dependencyIDs := strings.Split(addonDBInfo.Dependencies, " ")
+	if len(dependencyIDs) == 1 && dependencyIDs[0] == "" {
+		dependencyIDs = nil
+	}
+
 	// Get api.AddonRepository information for all dependencies
 	var dependencies []*api.AddonRepository
-	for _, depID := range info.Dependencies {
+	for _, depID := range dependencyIDs {
 		// Add-on repository IDs may also be formatted as "{repo_name}_{repo_id}"
 		splitID := strings.Split(depID, "_")
 		repoID, err := strconv.ParseInt(splitID[len(splitID) - 1], 10, 64)
@@ -92,8 +81,6 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 			ID: repo.ID,
 			Name: repo.Name,
 			OwnerName: repo.OwnerName,
-			Topics: repo.Topics,
-			Description: repo.Description,
 		}
 		resultEntry, err := ToAddonRepo(ctx, depOpts)
 		if err != nil {
@@ -112,11 +99,11 @@ func ToAddonRepo(ctx context.Context, opts *AddonRepositoryConvertOptions) (*api
 			Description: release.Note,
 			CreatedAt: release.CreatedUnix.AsTime(),
 		},
-		Type: addonType,
-		Title: info.Title,
-		Description: opts.Description,
+		Type: addonDBInfo.Type,
+		Title: addonDBInfo.Title,
+		Description: addonDBInfo.Description,
 		Author: opts.OwnerName,
-		License: info.License,
+		License: addonDBInfo.License,
 		OriginURL: opts.HTMLURL(),
 		URL: opts.HTMLURL() + "/archive/" + release.Sha1 + ".zip",
 		UpstreamURL: fmt.Sprintf("%s/api/v1/repos/addons/%d", strings.TrimSuffix(setting.AppURL, "/"), opts.ID),

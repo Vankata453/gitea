@@ -12,6 +12,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/base64"
+	"encoding/json"
 
 	"code.gitea.io/gitea/models/db"
 	repo_model "code.gitea.io/gitea/models/repo"
@@ -22,6 +23,7 @@ import (
 	"code.gitea.io/gitea/modules/timeutil"
 	files_service "code.gitea.io/gitea/services/repository/files"
 	archiver_service "code.gitea.io/gitea/services/repository/archiver"
+	api "code.gitea.io/gitea/modules/structs"
 )
 
 func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, rel *repo_model.Release) error {
@@ -87,13 +89,31 @@ func VerifyAddonRelease(ctx context.Context, doer *user_model.User, repo *repo_m
 		return err
 	}
 	if fileResponse.Content == nil {
-		return errors.New("Repository has no 'info' file!");
+		return errors.New("Repository \"" + repo.Name + "\" has no 'info' file!");
 	}
 	infoContent, err := base64.StdEncoding.DecodeString(*fileResponse.Content.Content)
 	if err != nil {
 		return err
 	}
-	addonDBInfo.InfoFile = string(infoContent)
+
+	// Parse the "info" file
+	var info api.AddonRepositoryInfo
+	err = json.Unmarshal(infoContent, &info)
+	if err != nil {
+		return err
+	}
+
+	// Get type from "info" file
+	if info.Type == "" || !repo_model.IsValidAddonType(info.Type) {
+		return errors.New("Invalid add-on type \"" + info.Type + "\" specified for repository \"" + repo.Name + "\".")
+	}
+	addonDBInfo.Type = strings.ToLower(info.Type)
+
+	// Copy other add-on info from "info" file
+	addonDBInfo.Title = info.Title
+	addonDBInfo.Description = info.Description
+	addonDBInfo.License = info.License
+	addonDBInfo.Dependencies = strings.Join(info.Dependencies, " ")
 
 	// Get all screenshot files from the Git tree
 	var screenshots []string
