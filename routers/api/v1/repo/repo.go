@@ -242,7 +242,6 @@ func Search(ctx *context.APIContext) {
 func SearchAddons(ctx *context.APIContext) {
 	// swagger:operation GET /repos/addons repository repoSearch
 	// ---
-	// summary: Search for repositories
 	// produces:
 	// - document
 	// parameters:
@@ -250,64 +249,28 @@ func SearchAddons(ctx *context.APIContext) {
 	//   in: query
 	//   description: keyword
 	//   type: string
-	// - name: topic
-	//   in: query
-	//   description: Limit search to repositories with keyword as topic
-	//   type: boolean
 	// - name: includeDesc
 	//   in: query
 	//   description: include search of keyword within repository description
 	//   type: boolean
-	// - name: uid
+	// - name: type
 	//   in: query
-	//   description: search only for repos that the user with the given id owns or contributes to
-	//   type: integer
-	//   format: int64
-	// - name: priority_owner_id
-	//   in: query
-	//   description: repo owner to prioritize in the results
-	//   type: integer
-	//   format: int64
-	// - name: team_id
-	//   in: query
-	//   description: search only for repos that belong to the given team id
-	//   type: integer
-	//   format: int64
-	// - name: starredBy
-	//   in: query
-	//   description: search only for repos that the user with the given id has starred
-	//   type: integer
-	//   format: int64
-	// - name: private
-	//   in: query
-	//   description: include private repositories this user has access to (defaults to true)
-	//   type: boolean
-	// - name: is_private
-	//   in: query
-	//   description: show only pubic, private or all repositories (defaults to all)
-	//   type: boolean
-	// - name: template
-	//   in: query
-	//   description: include template repositories this user has access to (defaults to true)
-	//   type: boolean
-	// - name: archived
-	//   in: query
-	//   description: show only archived, non-archived or all repositories (defaults to all)
-	//   type: boolean
-	// - name: mode
-	//   in: query
-	//   description: type of repository to search for. Supported values are
-	//                "fork", "source", "mirror" and "collaborative"
+	//   description: Limit search to add-on repositories of a specific type. Supported values are
+	//                "worldmap", "world", "levelset", "languagepack", "resourcepack", "weakresourcepack"
 	//   type: string
-	// - name: exclusive
+	// - name: owner
 	//   in: query
-	//   description: if `uid` is given, search only for repos that the user owns
+	//   description: search only for repos that the user with the given username owns (case-insensitive)
+	//   type: string
+	// - name: contributor
+	//   in: query
+	//   description: if `owner` is given, also search for repos that the user with the given username contributes to
 	//   type: boolean
 	// - name: sort
 	//   in: query
 	//   description: sort repos by attribute. Supported values are
-	//                "alpha", "created", "updated", "size", "git_size", "lfs_size", "stars", "forks" and "id".
-	//                Default is "alpha"
+	//                "title", "stars".
+	//                Default is "title"
 	//   type: string
 	// - name: order
 	//   in: query
@@ -328,53 +291,19 @@ func SearchAddons(ctx *context.APIContext) {
 	//   "422":
 	//     "$ref": "#/responses/validationError"
 
-	opts := &repo_model.SearchRepoOptions{
+	opts := &repo_model.SearchAddonRepoOptions{
 		ListOptions:        utils.GetListOptions(ctx),
 		Actor:              ctx.Doer,
 		Keyword:            ctx.FormTrim("q"),
-		OwnerID:            ctx.FormInt64("uid"),
-		PriorityOwnerID:    ctx.FormInt64("priority_owner_id"),
-		TeamID:             ctx.FormInt64("team_id"),
-		TopicOnly:          ctx.FormBool("topic"),
-		Collaborate:        optional.None[bool](),
-		Private:            ctx.IsSigned && (ctx.FormString("private") == "" || ctx.FormBool("private")),
-		Template:           optional.None[bool](),
-		StarredByID:        ctx.FormInt64("starredBy"),
+		OwnerName:          ctx.FormString("owner"),
+		Contributor:        ctx.FormBool("contributor"),
+		Type:               ctx.FormString("type"),
 		IncludeDescription: ctx.FormBool("includeDesc"),
 	}
 
-	if ctx.FormString("template") != "" {
-		opts.Template = optional.Some(ctx.FormBool("template"))
-	}
-
-	if ctx.FormBool("exclusive") {
-		opts.Collaborate = optional.Some(false)
-	}
-
-	mode := ctx.FormString("mode")
-	switch mode {
-	case "source":
-		opts.Fork = optional.Some(false)
-		opts.Mirror = optional.Some(false)
-	case "fork":
-		opts.Fork = optional.Some(true)
-	case "mirror":
-		opts.Mirror = optional.Some(true)
-	case "collaborative":
-		opts.Mirror = optional.Some(false)
-		opts.Collaborate = optional.Some(true)
-	case "":
-	default:
-		ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid search mode: \"%s\"", mode))
+	if len(opts.Type) > 0 && !repo_model.IsValidAddonType(opts.Type) {
+		ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid add-on type: \"%s\"", opts.Type))
 		return
-	}
-
-	if ctx.FormString("archived") != "" {
-		opts.Archived = optional.Some(ctx.FormBool("archived"))
-	}
-
-	if ctx.FormString("is_private") != "" {
-		opts.IsPrivate = optional.Some(ctx.FormBool("is_private"))
 	}
 
 	sortMode := ctx.FormString("sort")
@@ -383,11 +312,11 @@ func SearchAddons(ctx *context.APIContext) {
 		if len(sortOrder) == 0 {
 			sortOrder = "asc"
 		}
-		if searchModeMap, ok := repo_model.OrderByMap[sortOrder]; ok {
+		if searchModeMap, ok := repo_model.OrderByMapAddon[sortOrder]; ok {
 			if orderBy, ok := searchModeMap[sortMode]; ok {
 				opts.OrderBy = orderBy
 			} else {
-				ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid sort mode: \"%s\"", sortMode))
+				ctx.Error(http.StatusUnprocessableEntity, "", fmt.Errorf("Invalid add-on sort mode: \"%s\"", sortMode))
 				return
 			}
 		} else {

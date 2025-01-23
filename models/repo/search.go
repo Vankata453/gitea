@@ -31,6 +31,18 @@ var OrderByMap = map[string]map[string]db.SearchOrderBy{
 	},
 }
 
+// OrderByMapAddon represents all possible search order for add-on repositories
+var OrderByMapAddon = map[string]map[string]db.SearchOrderBy{
+	"asc": {
+		"title": db.SearchOrderByAlphabetically,
+		"stars": db.SearchOrderByStars,
+	},
+	"desc": {
+		"title": db.SearchOrderByAlphabeticallyReverse,
+		"stars": db.SearchOrderByStarsReverse,
+	},
+}
+
 // OrderByFlatMap is similar to OrderByMap but use human language keywords
 // to decide between asc and desc
 var OrderByFlatMap = map[string]db.SearchOrderBy{
